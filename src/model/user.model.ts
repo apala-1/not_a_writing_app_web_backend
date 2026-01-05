@@ -10,13 +10,15 @@ const UserSchema: Schema = new Schema<UserType>(
         lastName: { type: String },
         role: { type: String, enum: ["user", "admin"], default: "user" },
     },
-    { timestamps: true }
+    { timestamps: true } // auto createdAt and updatedAt fields
 );
 
-export interface IUser extends UserType, Document {
+export interface IUser extends UserType, Document { // combine UserType and Mongoose Document
     _id: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
 
 export const UserModel = mongoose.model<IUser>("User", UserSchema);
+// UserModel is the mongoose model for users collection
+// db.users in MongoDB

@@ -1,7 +1,8 @@
-export class HttpError extends Error {
-    statusCode: number;
-    constructor(message: string, statusCode: number) {
-        super(message);
-        this.statusCode = statusCode;
-    }
+import { ZodError } from "zod";
+
+export function formatZodError(error: ZodError) {
+  return error.issues.map(i => {
+    const path = i.path?.length ? ` (${i.path.join(".")})` : "";
+    return `${i.message}${path}`;
+  }).join(", ");
 }

@@ -1,9 +1,17 @@
-import { UserModel, IUser } from "../model/user.model";
+import { IUser, UserModel } from "../model/user.model";
 
 export interface IUserRepository {
     createUser(userData: Partial<IUser>): Promise<IUser>;
+    getUserByEmail(email: string): Promise<IUser | null>
+    getUserByUsername(username: string): Promise<IUser | null>
+    // Additional
+    getUserById(id: string): Promise<IUser | null>
+    getAllUsers(): Promise<IUser[]>
+    updateUser(id: string, updateData: Partial<IUser>): Promise<IUser | null>;
+    deleteUser(id: string): Promise<boolean>;
 }
 
+// Mongo Implementation of UserRepository
 export class UserRepository implements IUserRepository {
     async getUserById(id: string): Promise<IUser | null> {
         // UserModel.findOne( {"_id": id} )
