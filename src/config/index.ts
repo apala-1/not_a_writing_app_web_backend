@@ -8,3 +8,5 @@ export const MONGODB_URI =
     process.env.MONGODB_URI ?? "mongodb://localhost:27017/defaultdb";
 
 export const JWT_SECRET: string = process.env.JWT_SECRET || 'default';
+
+console.log("MongoDB connection string in use:", MONGODB_URI);

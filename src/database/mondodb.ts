@@ -3,7 +3,10 @@ import { MONGODB_URI } from '../config';
 
 export async function connectToDatabase() {
     try {
-        await mongoose.connect(MONGODB_URI);
+        console.log("Attempting to connect with URI:", MONGODB_URI);
+        await mongoose.connect(MONGODB_URI, {
+            dbName: "NotAWritingApp" 
+        });
         console.log("Connected to MongoDB successfully.");
     } catch (error) {
         console.error("Error connecting to MongoDB: ", error);
