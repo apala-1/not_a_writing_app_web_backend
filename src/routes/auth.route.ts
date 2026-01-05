@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { AuthController } from "../controllers/auth.controller";
+
+let authController = new AuthController();
+let router = Router();
+
+router.post("/register", authController.register);
+router.post("/login", authController.login);
+
+export default router;
