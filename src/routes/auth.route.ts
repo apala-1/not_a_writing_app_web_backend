@@ -1,11 +1,17 @@
-// import { Router } from "express";
-// import { AuthController } from "../controllers/auth.controller";
+import { Router } from "express";
+import multer from "multer";
+import { AuthController } from "../controllers/auth.controller";
+import { authorizedMiddleware } from "../middlewares/authorized.middleware";
 
-// let authController = new AuthController();
-// let router = Router();
+const router = Router();
+const authController = new AuthController();
+const upload = multer({ dest: "uploads/" });
 
-// router.post("/register", authController.register);
-// router.post("/login", authController.login);
-// // add remaining routes like login, logout, etc
+router.post("/register", authController.register);
+router.post("/login", authController.login);
 
-// export default router;
+router.get("/me", authorizedMiddleware, authController.getMe);
+router.put("/me", authorizedMiddleware, upload.single("profilePicture"), authController.updateMe);
+router.delete("/me", authorizedMiddleware, authController.deleteMe);
+
+export default router;

@@ -5,7 +5,7 @@ export async function connectToDatabase() {
     try {
         console.log("Attempting to connect with URI:", MONGODB_URI);
         await mongoose.connect(MONGODB_URI, {
-            dbName: "NotAWritingApp" 
+            dbName: "not_a_writing_app", 
         });
         console.log("Connected to MongoDB successfully.");
     } catch (error) {
