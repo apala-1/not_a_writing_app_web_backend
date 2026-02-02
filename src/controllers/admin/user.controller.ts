@@ -10,18 +10,55 @@ interface MulterRequest extends Request {
 const userRepository = new UserRepository();
 
 export class AdminController {
-  async getAllUsers(req: Request, res: Response) {
-    try {
-      const users = await userRepository.getAllUsers();
-      const safeUsers = users.map(u => {
-        const { password, ...rest } = u.toObject();
-        return rest;
-      });
-      res.status(200).json({ success: true, data: safeUsers });
-    } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+  async createUser(req: MulterRequest, res: Response) {
+  try {
+    const { name, email, password, role, bio, occupation } = req.body;
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
     }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await userRepository.createUser({
+      name,
+      email,
+      password: hashedPassword,
+      role, // can be 'user' or 'admin'
+      bio,
+      occupation,
+      profilePicture: req.file?.filename || "default-picture.png",
+    });
+
+    const { password: _, ...safeUser } = newUser.toObject();
+
+    res.status(201).json({ success: true, data: safeUser });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
   }
+}
+
+  async getAllUsers(req: Request, res: Response) {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const size = parseInt(req.query.size as string) || 10;
+    const skip = (page - 1) * size;
+
+    const users = await userRepository.getUsersPaginated(skip, size); // implement in repo
+    const total = await userRepository.countUsers();
+
+    const safeUsers = users.map((u: IUser) => {
+      const { password, ...rest } = u.toObject();
+      return rest;
+    });
+
+    res.status(200).json({ success: true, data: safeUsers, total, page, size });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 
   async getUserById(req: Request, res: Response) {
     try {

@@ -8,6 +8,8 @@ export interface IUserRepository {
   getAllUsers(): Promise<IUser[]>;
   updateUser(id: string, updateData: Partial<IUser>): Promise<IUser | null>;
   deleteUser(id: string): Promise<boolean>;
+  getUsersPaginated(skip: number, limit: number): Promise<IUser[]>;
+  countUsers(): Promise<number>;
 }
 
 export class UserRepository implements IUserRepository {
@@ -28,8 +30,8 @@ export class UserRepository implements IUserRepository {
     return await UserModel.findById(id).exec();
   }
 
-  async getAllUsers(): Promise<IUser[]> {
-    return await UserModel.find().exec();
+  async getAllUsers(skip: number = 0, limit: number = 10): Promise<IUser[]> {
+    return await UserModel.find().skip(skip).limit(limit).exec();
   }
 
   async updateUser(id: string, updateData: Partial<IUser>): Promise<IUser | null> {
@@ -38,6 +40,14 @@ export class UserRepository implements IUserRepository {
       runValidators: true,
     }).exec();
   }
+
+  async getUsersPaginated(skip: number, limit: number): Promise<IUser[]> {
+  return await UserModel.find().skip(skip).limit(limit).exec();
+}
+
+  async countUsers(): Promise<number> {
+  return await UserModel.countDocuments().exec();
+}
 
   async deleteUser(id: string): Promise<boolean> {
     const result = await UserModel.findByIdAndDelete(id).exec();

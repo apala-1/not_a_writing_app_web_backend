@@ -22,12 +22,14 @@ export const authorizedMiddleware = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new HttpError("Unauthorized: token malformed", 401);
+    // Try reading Authorization header first
+    let token = req.headers.authorization?.split(" ")[1];
+
+    // If no token in header, try cookie
+    if (!token && req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
     }
 
-    const token = authHeader.split(" ")[1];
     if (!token) {
       throw new HttpError("Unauthorized: No token provided", 401);
     }
@@ -51,6 +53,7 @@ export const authorizedMiddleware = async (
     });
   }
 };
+
 
 // Admin-only middleware
 export const adminOnlyMiddleware = async (
