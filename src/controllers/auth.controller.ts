@@ -36,7 +36,26 @@ export class AuthController {
       }
 
       const { token, user } = await userService.loginUser(parsed.data);
-      return res.status(200).json({ success: true, message: "Login successful", data: { user, token } });
+      res.cookie("accessToken", token, {
+  httpOnly: true,
+  secure: false,      
+  sameSite: "lax",   
+});
+
+res.cookie("role", user.role, {
+  httpOnly: false,  
+  secure: false,
+  sameSite: "lax",
+});
+
+return res.status(200).json({
+  success: true,
+  message: "Login successful",
+  data: {
+    user,
+  },
+});
+
     } catch (err: any) {
       return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
     }
