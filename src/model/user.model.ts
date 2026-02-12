@@ -10,12 +10,16 @@ const UserSchema: Schema = new Schema<UserType>(
     role: { type: String, enum: ["user", "admin"], default: "user" },
     bio: { type: String, default: "", trim: true },
     occupation: { type: String, default: "", trim: true },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );
 
 export interface IUser extends UserType, Document {
   _id: mongoose.Types.ObjectId;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

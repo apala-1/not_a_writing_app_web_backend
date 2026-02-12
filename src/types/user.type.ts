@@ -8,6 +8,8 @@ export const userSchema = z.object({
   role: z.enum(["user", "admin"]).default("user"),
   bio: z.string().optional().default(""),
   occupation: z.string().optional().default(""),
+  resetPasswordToken: z.string().optional(),
+  resetPasswordExpires: z.date().optional(),
   createdAt: z.date().optional().default(() => new Date()),
 });
 
