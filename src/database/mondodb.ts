@@ -13,3 +13,10 @@ export async function connectToDatabase() {
         process.exit(1);
     }
 }
+
+export const disconnectDB = async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+  }
+};
