@@ -118,7 +118,7 @@ async forgotPassword(req: Request, res: Response) {
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     await user.save();
 
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.CLIENT_URL}/resetPass?token=${resetToken}`;
 
     await sendEmail(
       user.email,
