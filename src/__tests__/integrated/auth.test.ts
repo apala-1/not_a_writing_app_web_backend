@@ -2,6 +2,10 @@ import request from 'supertest';// mock HTTP requests
 import app from '../../app'; // import the Express app
 import { UserModel } from '../../model/user.model';
 
+jest.mock('../../config/email', () => ({
+  sendEmail: jest.fn().mockResolvedValue(true),
+}));
+
 describe(
     'Authentication Routes', // test group/suite name
     () => { // function containing related tests
@@ -48,5 +52,67 @@ describe(
                 )
             }
         )
+        
+        describe('POST /api/v1/auth/login', () => {
+        test('should login successfully with correct credentials', async () => {
+            const response = await request(app)
+            .post('/api/v1/auth/login')
+            .send({
+                email: testUser.email,
+                password: testUser.password,
+            });
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data).toHaveProperty('token');
+        });
+
+        test('should fail login with wrong password', async () => {
+            const response = await request(app)
+            .post('/api/v1/auth/login')
+            .send({
+                email: testUser.email,
+                password: 'wrongpassword',
+            });
+
+            expect(response.status).toBe(401);
+        });
+
+        test('should fail login with non-existing email', async () => {
+            const response = await request(app)
+            .post('/api/v1/auth/login')
+            .send({
+                email: 'fake@email.com',
+                password: 'password123',
+            });
+
+            expect(response.status).toBe(401);
+        });
+        });
+
+
+        describe('POST /api/v1/auth/forgot-password', () => {
+        test('should send reset email for existing user', async () => {
+            const response = await request(app)
+            .post('/api/v1/auth/forgot-password')
+            .send({ email: testUser.email });
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+
+            const user = await UserModel.findOne({ email: testUser.email });
+            expect(user?.resetPasswordToken).toBeDefined();
+            expect(user?.resetPasswordExpires).toBeDefined();
+        });
+
+        test('should fail for non-existing email', async () => {
+            const response = await request(app)
+            .post('/api/v1/auth/forgot-password')
+            .send({ email: 'notfound@email.com' });
+
+            expect(response.status).toBe(404);
+            expect(response.body.success).toBe(false);
+        });
+        });
     }
 );
