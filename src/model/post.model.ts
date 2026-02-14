@@ -4,7 +4,7 @@ import { required } from "zod/v4/core/util.cjs";
 const postSchema: Schema = new Schema<IPost>(
     {
         title: { type: String, required: true, trim: true },
-        content: { type: String, required: true },
+        content: Schema.Types.Mixed,
         description: { type: String, required: true, trim: true },
         author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
         attachments: [
@@ -19,7 +19,7 @@ const postSchema: Schema = new Schema<IPost>(
 
 export interface IPost extends Document {
     title: string;
-    content: string;
+    content: any;
     description: string;
     author: mongoose.Types.ObjectId;
     attachments: {
