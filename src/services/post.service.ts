@@ -38,4 +38,7 @@ export class PostService {
         const deleted = await postRepository.deletePost(id);
         if (!deleted) throw new HttpError("Failed to delete post", 500);
     }
+    async getDrafts(userId: string): Promise<IPost[]> {
+        return await postRepository.getDrafts(userId);
+    }
 }

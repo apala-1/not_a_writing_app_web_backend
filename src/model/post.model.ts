@@ -12,7 +12,8 @@ const postSchema: Schema = new Schema<IPost>(
                 url: { type: String, required: true },
                 type: { type: String, enum: ["image", "gif", "file"], required: true }
             }
-        ]
+        ],
+        status: { type: String, enum: ["draft", "published"], default: "published" },
     },
     { timestamps: true }
 );
@@ -28,6 +29,7 @@ export interface IPost extends Document {
     }[];
     createdAt: Date;
     updatedAt: Date;
+    status: string;
 }
 
 export const PostModel = mongoose.model<IPost>("Post", postSchema);

@@ -29,4 +29,7 @@ export class PostRepository implements IPostRepository {
         const result =  await PostModel.findByIdAndDelete(id).exec();
         return !!result;
     }
+    async getDrafts(userId: string): Promise<IPost[]> {
+        return await PostModel.find({ author: userId, status: "draft" }).exec();
+    }
 }

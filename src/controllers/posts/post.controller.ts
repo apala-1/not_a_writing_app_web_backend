@@ -152,4 +152,13 @@ export class PostController {
             return res.status(500).json({ success: false, message: err.message });
         }
     }
+    async getDrafts(req: Request, res: Response) {
+        try {
+            if (!req.user) return res.status(401).json({ success: false, message: "Unauthorized" });
+            const drafts = await postService.getDrafts(req.user._id.toString());
+            return res.status(200).json({ success: true, data: drafts });
+        } catch(err: any) {
+            return res.status(500).json({ success: false, message: err.message });
+        }
+    }
 }

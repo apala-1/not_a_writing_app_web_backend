@@ -8,6 +8,7 @@ const postController = new PostController();
 const router = Router();
 
 router.get("/", authorizedMiddleware, postController.getAllPosts.bind(postController));
+router.get("/drafts", authorizedMiddleware, postController.getDrafts.bind(postController));
 router.get("/:id", authorizedMiddleware, postController.getPost.bind(postController));
 router.post("/", authorizedMiddleware, uploadPost.array("attachments", 5), postController.createPost.bind(postController));
 router.put("/:id", authorizedMiddleware, uploadPost.array("attachments", 5), postController.updatePost.bind(postController));
