@@ -3,6 +3,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';   // ✅ import cors
 import authRoutes from './routes/auth.route';
 import userRoutes from './routes/admin/user.route';
+import postRoutes from './routes/post.route';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -31,5 +32,6 @@ app.use(cors(
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/post', postRoutes);
 
 export default app;
