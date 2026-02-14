@@ -18,11 +18,15 @@ app.use(cookieParser());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // ✅ Add CORS middleware
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'], // allowed origins
-  credentials: true, // allow cookies/auth headers
-};
-app.use(cors(corsOptions));
+// const corsOptions = {
+//   origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'], // allowed origins
+//   credentials: true, // allow cookies/auth headers
+// };
+// app.use(cors(corsOptions));
+app.use(cors(
+  {origin: true,
+  credentials: true}
+))
 
 // Routes
 app.use('/api/v1/auth', authRoutes);

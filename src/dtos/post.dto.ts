@@ -1,0 +1,30 @@
+import { z } from "zod";
+
+export const CreatePostDTO = z.object({
+    title: z.string().min(1),
+    content: z.string().min(1),
+    attachments: z.array(z.object({
+        url: z.string().url(),
+        type: z.enum(["image", "gif", "file"])
+    })).optional(),
+    description: z.string().min(50)
+})
+
+export type CreatePostDTO = z.infer<typeof CreatePostDTO>;
+
+export const EditPostDTO = z.object({
+    title: z.string().min(1).optional(),
+    content: z.string().min(1).optional(),
+    attachments: z.array(z.object({
+        url: z.string().url(),
+        type: z.enum(["image", "gif", "file"])
+    })).optional(),
+    description: z.string().min(50).optional()
+}).refine(
+    data => data.title !== undefined || data.description !== undefined || data.content !== undefined || data.attachments !== undefined,
+    {
+        message: "At least one of title or description must be provided",
+    }
+);
+
+export type EditPostDTO = z.infer<typeof EditPostDTO>;
