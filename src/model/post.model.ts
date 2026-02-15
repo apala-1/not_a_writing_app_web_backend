@@ -1,5 +1,4 @@
-import mongoose, {Document, mongo, Schema } from "mongoose";
-import { required } from "zod/v4/core/util.cjs";
+import mongoose, {Document, Schema } from "mongoose";
 
 const postSchema: Schema = new Schema<IPost>(
     {

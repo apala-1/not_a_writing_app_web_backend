@@ -23,3 +23,15 @@ export const uploadPost = multer({ storage,
     cb(null, true);
   },
  });
+
+ export const uploadBook = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, "uploads/books");
+        },
+        filename: (req, file, cb) => {
+            cb(null, `${Date.now()}-${file.originalname}`);
+        },
+    }),
+});
+

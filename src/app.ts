@@ -4,6 +4,7 @@ import cors from 'cors';   // ✅ import cors
 import authRoutes from './routes/auth.route';
 import userRoutes from './routes/admin/user.route';
 import postRoutes from './routes/post.route';
+import bookRoutes from './routes/book.route';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -33,5 +34,6 @@ app.use(cors(
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/post', postRoutes);
+app.use('/api/v1/book', bookRoutes);
 
 export default app;
