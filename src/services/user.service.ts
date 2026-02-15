@@ -5,8 +5,10 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
 import { HttpError } from "../errors/http-error";
+import { ProfileService } from "./profile.service";
 
 const userRepository = new UserRepository();
+const profileService = new ProfileService();
 
 export class UserService {
   async createUser(data: CreateUserDTO): Promise<IUser> {
@@ -20,7 +22,11 @@ export class UserService {
       password: hashedPassword,
     };
 
-    return await userRepository.createUser(userData);
+    const user = await userRepository.createUser(userData);
+
+    await profileService.createProfile(user._id.toString());
+
+    return user;
   }
 
   async loginUser(data: LoginUserDTO): Promise<{ token: string; user: IUser }> {
