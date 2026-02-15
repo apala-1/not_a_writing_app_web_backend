@@ -16,6 +16,12 @@ const bookSchema: Schema = new Schema<IBook>(
             }
         ],
         status: { type: String, enum: ["draft", "published"], default: "published" },
+        shareToken: {
+            type: String,
+            required: false,
+        },
+        visibility: { type: String, enum: ["public", "private", "link"], default: "private" },
+        sharedWith: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     },
     { timestamps: true }
 );
@@ -35,6 +41,9 @@ export interface IBook extends Document {
     createdAt: Date;
     updatedAt: Date;
     status: string;
+    shareToken?: string;
+    visibility: "public" | "private" | "link";
+    sharedWith: mongoose.Types.ObjectId[];
 }
 
 export const BookModel = mongoose.model<IBook>("Book", bookSchema);

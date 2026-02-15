@@ -10,6 +10,7 @@ router.use(authorizedMiddleware);
 
 router.get("/", bookController.getAllBooks.bind(bookController));
 router.get("/drafts", bookController.getDrafts.bind(bookController));
+router.get("/token/:shareToken", bookController.getBookByToken.bind(bookController));
 router.get("/:id", bookController.getBook.bind(bookController));
 
 router.post(

@@ -11,6 +11,8 @@ export const bookSchema = z.object({
         title: z.string().min(1),
         content: z.any(),
     }).optional()),
+    visibility: z.enum(["public", "private", "link"]).default("private"),
+    sharedWith: z.array(z.string()).optional(),
     status: z.enum(["draft", "published"]).default("published"),
     createdAt: z.date().optional().default(() => new Date()),
 });

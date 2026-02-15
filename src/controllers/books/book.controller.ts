@@ -2,9 +2,15 @@ import { Request, Response } from "express";
 import { CreateBookDTO, EditBookDTO } from "../../dtos/book.dto";
 import { BookService } from "../../services/book.service";
 import z from "zod";
-import path from "path";
+import path, { parse } from "path";
 import fs from "fs";
 import { IUser } from "../../model/user.model";
+import crypto from "crypto";
+import mongoose from "mongoose";
+
+function toObjectIdArray(ids?: string[]): mongoose.Types.ObjectId[] | undefined {
+    return ids?.map(id => new mongoose.Types.ObjectId(id));
+}
 
 const bookService = new BookService();
 
@@ -28,6 +34,11 @@ export class BookController {
                 });
             }
 
+            let shareToken: string | undefined;
+            if (parsed.data.visibility === "link") {
+                shareToken = crypto.randomBytes(16).toString("hex");
+            }
+
             const file = req.file as Express.Multer.File | undefined;
 
             if (!file) {
@@ -40,8 +51,10 @@ export class BookController {
             const book = await bookService.createBook(
                 {
                     ...parsed.data,
-                    coverPhoto: file?.mimetype.startsWith("image") ? "image" : "file",
-                    coverPhotoUrl: `/uploads/books/${file.filename}`
+                    coverPhoto: file.mimetype.startsWith("image") ? "image" : "file",
+                    coverPhotoUrl: `/uploads/books/${file.filename}`,
+                    shareToken,
+                    sharedWith: toObjectIdArray(parsed.data.sharedWith), // <--- convert here
                 },
                 req.user!._id.toString()
             );
@@ -69,6 +82,11 @@ export class BookController {
                 });
             }
 
+            let shareToken: string | undefined;
+            if (parsed.data.visibility === "link") {
+                shareToken = crypto.randomBytes(16).toString("hex");
+            }
+
             const file = req.file as Express.Multer.File | undefined;
 
             if (file) {
@@ -85,9 +103,10 @@ export class BookController {
             const updateData = {
                 ...parsed.data,
                 ...(file && { 
-                    coverPhoto: file?.mimetype.startsWith("image") ? "image" : "file",
+                    coverPhoto: file.mimetype.startsWith("image") ? "image" : "file",
                     coverPhotoUrl: `/uploads/books/${file.filename}` 
                 }),
+                ...(parsed.data.visibility === "link" && { shareToken }),
             };
 
             const updated = await bookService.updateBook(
@@ -110,39 +129,40 @@ export class BookController {
     }
 
     async getBook(req: Request, res: Response) {
-        try {
-            const book = await bookService.getBookById(req.params.id);
-            return res.status(200).json({
-                success: true,
-                data: book,
-            });
-        } catch (err: any) {
-            return res.status(404).json({
-                success: false,
-                message: err.message,
-            });
+    try {
+        const book = await bookService.getBookById(req.params.id, req.user?._id.toString());
+        return res.status(200).json({ success: true, data: book });
+    } catch (err: any) {
+        if (err.message === "Unauthorized") {
+            return res.status(403).json({ success: false, message: "Unauthorized" });
         }
+        if (err.message === "Book not found") {
+            return res.status(404).json({ success: false, message: "Book not found" });
+        }
+        return res.status(500).json({ success: false, message: err.message });
     }
+}
+
 
     async getAllBooks(req: Request, res: Response) {
-        try {
-            const skip = parseInt(req.query.skip as string) || 0;
-            const limit = parseInt(req.query.limit as string) || 10;
+    try {
+        const skip = parseInt(req.query.skip as string) || 0;
+        const limit = parseInt(req.query.limit as string) || 10;
 
-            const books = await bookService.getAllBooks(skip, limit);
+        const books = await bookService.getAllBooks(req.user!._id.toString(), skip, limit);
 
-            return res.status(200).json({
-                success: true,
-                data: books,
-            });
+        return res.status(200).json({
+            success: true,
+            data: books,
+        });
 
-        } catch (err: any) {
-            return res.status(500).json({
-                success: false,
-                message: err.message,
-            });
-        }
+    } catch (err: any) {
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
     }
+}
 
     async deleteBook(req: Request, res: Response) {
         try {
@@ -203,4 +223,23 @@ export class BookController {
             });
         }
     }
+    async getBookByToken(req: Request, res: Response) {
+        console.log("Params:", req.params);
+    try {
+        const book = await bookService.getBookByShareToken(req.params.shareToken);
+
+        if (!book || book.visibility !== "link") {
+        return res.status(404).json({ success: false });
+        }
+
+        return res.status(200).json({
+        success: true,
+        data: book,
+        });
+
+    } catch (err: any) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+    }
+
 }

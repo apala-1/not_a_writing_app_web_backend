@@ -1,4 +1,3 @@
-import { stat } from "node:fs";
 import { z } from "zod";
 
 export const CreateBookDTO = z.object({
@@ -11,6 +10,8 @@ export const CreateBookDTO = z.object({
         title: z.string().min(1),
         content: z.any(),
     })).optional(),
+    visibility: z.enum(["public", "private", "link"]).default("private"),
+    sharedWith: z.array(z.string()).optional(),
 });
 
 export type CreateBookDTO = z.infer<typeof CreateBookDTO>;
@@ -25,6 +26,8 @@ export const EditBookDTO = z.object({
         title: z.string().min(1),
         content: z.any(),
     })).optional(),
+    visibility: z.enum(["public", "private", "link"]).optional(),
+    sharedWith: z.array(z.string()).optional(),
 }).refine(
     data => data.title !== undefined || data.description !== undefined || data.chapters !== undefined || data.status !== undefined,
     {
