@@ -1,7 +1,9 @@
 import { ProfileRepository } from "../repository/profile.repository";
+import { PostRepository } from "../repository/post.repository";
 import { IProfile } from "../model/profile.model";
 
 const profileRepo = new ProfileRepository();
+const postRepo = new PostRepository();
 
 export class ProfileService {
   async createProfile(userId: string): Promise<IProfile> {
@@ -39,14 +41,26 @@ export class ProfileService {
  async addPostAction(
   userId: string,
   postId: string,
-  action: "like" | "share" | "comment" | "save"
+  action: "like" | "share" | "save"
 ): Promise<IProfile> {
+
   const updated = await profileRepo.addPostAction(userId, postId, action);
   if (!updated) throw new Error("Profile not found");
 
-  return updated;
+  if (action === "like") {
+    await postRepo.incrementLikes(postId);
+  }
+
+  if (action === "share") {
+    await postRepo.incrementShares(postId);
+  }
+
+  if (action === "save") {
+  await postRepo.incrementSaves(postId);
 }
 
+  return updated;
+}
 
   async updateCounts(
   userId: string,

@@ -13,9 +13,30 @@ const postSchema: Schema = new Schema<IPost>(
             }
         ],
         status: { type: String, enum: ["draft", "published"], default: "published" },
+        likesCount: { type: Number, default: 0 },
+        commentsCount: { type: Number, default: 0 },
+        sharesCount: { type: Number, default: 0 },
+        savesCount: { type: Number, default: 0 },
+        viewsCount: { type: Number, default: 0 },
+        visibility: { type: String, enum: ["public", "private"], default: "public" },
     },
     { timestamps: true }
 );
+
+postSchema.index({ author: 1 });
+postSchema.index({ createdAt: -1 });
+postSchema.index({ status: 1 });
+postSchema.index({ visibility: 1 });
+
+postSchema.index({ likesCount: -1 });
+postSchema.index({ commentsCount: -1 });
+
+postSchema.index({
+  author: 1,
+  status: 1,
+  visibility: 1,
+  createdAt: -1
+});
 
 export interface IPost extends Document {
     title: string;
@@ -29,6 +50,12 @@ export interface IPost extends Document {
     createdAt: Date;
     updatedAt: Date;
     status: string;
+    viewsCount: number;
+    likesCount: number;
+    sharesCount: number;
+    savesCount: number;
+    commentsCount: number;
+    visibility: string;
 }
 
 export const PostModel = mongoose.model<IPost>("Post", postSchema);

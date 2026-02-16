@@ -161,4 +161,75 @@ export class PostController {
             return res.status(500).json({ success: false, message: err.message });
         }
     }
+    async addView(req: Request, res: Response) {
+        const { id } = req.params;
+
+        await postService.addView(id);
+
+        res.status(200).json({ message: "View counted" });
+    }
+    async getFeed(req: Request, res: Response) {
+        const userId = req.params.id;
+        const { lastCreatedAt } = req.query as { lastCreatedAt?: string; limit?: string };
+        const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+        const posts = await postService.getFeed(
+            userId,
+            lastCreatedAt as string | undefined,
+            limit
+        );
+
+        res.json(posts);
+    }
+    async toggleLike(req: Request, res: Response) {
+        try {
+            const postId = req.params.postId;
+            const userId = req.user!._id.toString();
+
+            const result = await postService.toggleLike(postId, userId);
+
+            return res.status(200).json({ success: true, action: result });
+        } catch (err: any) {
+            return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
+        }
+    }
+
+    async toggleSave(req: Request, res: Response) {
+        try {
+            const postId = req.params.postId;
+            const userId = req.user!._id.toString();
+
+            const result = await postService.toggleSave(postId, userId);
+
+            return res.status(200).json({ success: true, action: result });
+        } catch (err: any) {
+            return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
+        }
+    }
+
+    async addShare(req: Request, res: Response) {
+        try {
+            const postId = req.params.id;
+
+            await postService.addShare(postId);
+
+            return res.status(200).json({ success: true, message: "Share counted" });
+        } catch (err: any) {
+            return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
+        }
+    }
+
+    async getRankedFeed(req: Request, res: Response) {
+        try {
+            const userId = req.params.userId;
+            const skip = parseInt(req.query.skip as string) || 0;
+            const limit = parseInt(req.query.limit as string) || 10;
+
+            const posts = await postService.getRankedFeed(userId, skip, limit);
+
+            return res.status(200).json({ success: true, data: posts });
+        } catch (err: any) {
+            return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
+        }
+    }
 }

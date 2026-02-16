@@ -69,4 +69,21 @@ export class ProfileRepository {
   );
 }
 
+async incrementPosts(userId: string) {
+  return ProfileModel.findOneAndUpdate(
+    { user: userId },
+    { $inc: { postsCount: 1 } },
+    { new: true }
+  );
+}
+
+async decrementPosts(userId: string) {
+  return ProfileModel.findOneAndUpdate(
+    { user: userId },
+    { $inc: { postsCount: -1 } },
+    { new: true }
+  );
+}
+
+
 }
