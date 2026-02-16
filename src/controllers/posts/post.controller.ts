@@ -226,6 +226,7 @@ export class PostController {
             const limit = parseInt(req.query.limit as string) || 10;
 
             const posts = await postService.getRankedFeed(userId, skip, limit);
+            console.log("Ranked feed posts:", posts);
 
             return res.status(200).json({ success: true, data: posts });
         } catch (err: any) {

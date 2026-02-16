@@ -116,11 +116,13 @@ export class PostService {
     }
 
     async getRankedFeed(userId: string, skip = 0, limit = 10) {
+        console.log("User ID for feed:", userId);
         const profile = await ProfileModel.findOne({ user: userId });
+        console.log("Profile found:", profile);
         if (!profile) throw new HttpError("Profile not found", 404);
 
         const followingIds = (profile.following ?? []).map(id => id.toString());
-
+        console.log("Following IDs:", followingIds);
         return postRepo.getRankedFeedPosts(followingIds, skip, limit);
     }
 }

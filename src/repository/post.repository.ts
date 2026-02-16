@@ -109,8 +109,13 @@ async decrementComments(postId: string) {
     }
 
     async getRankedFeedPosts(followingIds: string[], skip: number = 0, limit: number = 10) {
+        const followingObjectIds = followingIds.map(id => new mongoose.Types.ObjectId(id));
+        console.log("Querying posts with authors in:", followingIds);
+const posts = await PostModel.find({ author: { $in: followingIds } }).sort({ createdAt: -1 }).skip(skip).limit(limit);
+console.log("Posts found:", posts.length);
+
         return PostModel.aggregate([
-            { $match: { author: { $in: followingIds }, status: "published" } },
+            { $match: { author: { $in: followingObjectIds }, status: "published", visibility: "public" } },
             {
                 $addFields: {
                     engagementScore: {
