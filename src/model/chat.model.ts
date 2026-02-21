@@ -1,19 +1,21 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+// chat.model.ts
+import { Schema, model, Types } from "mongoose";
 
-export interface IChat extends Document {
-  sender: Types.ObjectId;      // now matches Schema.Types.ObjectId
-  receiver: Types.ObjectId;
+interface IChat {
+  senderId: string | Types.ObjectId;
+  receiverId: string | Types.ObjectId;
   message: string;
-  createdAt: Date;
-  read: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-const chatSchema = new Schema<IChat>({
-  sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  receiver: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  message: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  read: { type: Boolean, default: false },
-});
+const chatSchema = new Schema<IChat>(
+  {
+    senderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    receiverId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    message: { type: String, required: true },
+  },
+  { timestamps: true }
+);
 
-export const Chat = mongoose.model<IChat>("Chat", chatSchema);
+export const ChatModel = model<IChat>("Chat", chatSchema); // ✅ export ChatModel

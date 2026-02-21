@@ -1,33 +1,34 @@
 import { Request, Response } from "express";
-import { Chat } from "../../model/chat.model";
+import { ChatModel } from "../../model/chat.model";
 
 export class ChatController {
-  // Send message
   async sendMessage(req: Request, res: Response) {
     try {
-      const { receiver, message } = req.body;
-      const sender = req.user?._id; // assuming authorizedMiddleware sets req.user
-      if (!sender || !receiver || !message) {
+      const { receiverId, message } = req.body;
+      const senderId = req.user?._id; // TS now knows this exists
+      if (!senderId) {
+  return res.status(401).json({ success: false, message: "Unauthorized" });
+}
+      if (!senderId || !receiverId || !message) {
         return res.status(400).json({ success: false, message: "Invalid data" });
       }
 
-      const chat = await Chat.create({ sender, receiver, message });
+      const chat = await ChatModel.create({ senderId, receiverId, message });
       res.status(201).json({ success: true, data: chat });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });
     }
   }
 
-  // Get conversation between two users
   async getConversation(req: Request, res: Response) {
     try {
       const { userA, userB } = req.params;
-      const messages = await Chat.find({
+      const messages = await ChatModel.find({
         $or: [
-          { sender: userA, receiver: userB },
-          { sender: userB, receiver: userA },
+          { senderId: userA, receiverId: userB },
+          { senderId: userB, receiverId: userA },
         ],
-      }).sort({ createdAt: 1 }); // oldest first
+      }).sort({ createdAt: 1 });
 
       res.status(200).json({ success: true, data: messages });
     } catch (err) {
