@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { CommentService } from "../../services/comment.service";
 import { createCommentDTO } from "../../dtos/comment.dto";
+import { ProfileModel } from "../../model/profile.model";
+import { PopulatedProfileType } from "../../types/profile.type";
+import { Comment } from "../../model/comment.model";
+import { IComment } from "../../types/comment.type";
+import { IUser } from "../../model/user.model";
 
 const service = new CommentService();
 
@@ -100,4 +105,48 @@ export class CommentController {
       });
     }
   }
+
+   async getWholeCommentWithProfile(req: Request, res: Response) {
+  try {
+    const userId = req.params.userId;
+
+    // Find all comments by this user and populate the user reference
+    const comments = await Comment.find({ user: userId })
+      .populate("user") as IComment[]; // Type assertion
+
+    if (!comments || comments.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No comments found for this user",
+      });
+    }
+
+    const data = comments.map(comment => {
+  const user = comment.user as IUser; // safe cast after populate
+
+  return {
+    commentId: comment._id,
+    content: comment.content,
+    createdAt: comment.createdAt,
+    user: {
+      userId: user._id,
+      name: user.name,
+      email: user.email,
+      profilePicture: user.profilePicture,
+    }
+  };
+});
+
+    return res.json({
+      success: true,
+      data,
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
 }

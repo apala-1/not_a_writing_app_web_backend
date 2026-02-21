@@ -5,6 +5,10 @@ import { authorizedMiddleware } from "../middlewares/authorized.middleware";
 const router = Router();
 const controller = new CommentController();
 
+router.get(
+  "/whole-comment/:userId",
+  controller.getWholeCommentWithProfile.bind(controller)
+);
 router.post("/", authorizedMiddleware, controller.create.bind(controller));
 router.get("/post/:postId", controller.getByPost.bind(controller));
 router.patch("/:commentId", authorizedMiddleware, controller.update.bind(controller));
