@@ -5,6 +5,7 @@ import { Request, Response } from "express";
 import path from "path";
 import fs from "fs";
 import { IUser } from "../../model/user.model";
+import { PostModel } from "../../model/post.model";
 
 const postService = new PostService();
 
@@ -168,19 +169,20 @@ export class PostController {
 
         res.status(200).json({ message: "View counted" });
     }
-    async getFeed(req: Request, res: Response) {
-        const userId = req.params.id;
-        const { lastCreatedAt } = req.query as { lastCreatedAt?: string; limit?: string };
-        const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+    // In your postService
+async getFeed(req: Request, res: Response) {
+    const userId = req.params.id;
+    const { lastCreatedAt, limit } = req.query as { lastCreatedAt?: string; limit?: string };
 
-        const posts = await postService.getFeed(
-            userId,
-            lastCreatedAt as string | undefined,
-            limit
-        );
+    const feed = await postService.getFeed(
+        userId,
+        lastCreatedAt,
+        limit ? parseInt(limit, 10) : 10
+    );
 
-        res.json(posts);
-    }
+    res.json(feed);
+}
+
     async toggleLike(req: Request, res: Response) {
         try {
             const postId = req.params.postId;

@@ -41,4 +41,10 @@ export class UserService {
 
     return { token, user };
   }
+
+  async getUserById(id: string): Promise<IUser> {
+    const user = await userRepository.getUserById(id);
+    if (!user) throw new HttpError("User not found", 404);
+    return user;
+  }
 }

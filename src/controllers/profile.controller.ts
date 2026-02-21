@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import { ProfileService } from "../services/profile.service";
 import { FollowDTO, PostActionDTO } from "../dtos/profile.dto";
 import { IUser } from "../model/user.model";
+import { UserService } from "../services/user.service";
+import { success } from "zod";
+import { ProfileModel } from "../model/profile.model";
+import { PopulatedProfileType } from "../types/profile.type";
 
 declare global {
   namespace Express {
@@ -52,4 +56,40 @@ export class ProfileController {
       res.status(400).json({ success: false, message: err.message });
     }
   } 
+
+  async getWholeProfile(req: Request, res: Response) {
+  try {
+    const userId = req.params.userId;
+
+    const profile = await ProfileModel
+      .findOne({ user: userId })
+      .populate("user") as PopulatedProfileType | null;
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        userId: profile.user._id,
+        name: profile.user.name,
+        email: profile.user.email,
+        bio: profile.user.bio,
+        postsCount: profile.postsCount,
+        followersCount: profile.followers.length,
+        followingCount: profile.following.length,
+      },
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+  }
 }

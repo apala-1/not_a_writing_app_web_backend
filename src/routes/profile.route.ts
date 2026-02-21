@@ -7,6 +7,7 @@ const router = Router();
 
 router.use(authorizedMiddleware);
 
+router.get("/profile/:userId", profileController.getWholeProfile.bind(profileController))
 router.get("/:userId", profileController.getProfile.bind(profileController));
 router.post("/follow", profileController.follow.bind(profileController));
 router.post("/unfollow", profileController.unfollow.bind(profileController));

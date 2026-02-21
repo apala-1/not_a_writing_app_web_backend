@@ -30,7 +30,12 @@ export class PostRepository implements IPostRepository {
     }
 
     async getAllPosts(skip: number = 0, limit: number = 10) {
-        return PostModel.find()
+        return PostModel.find(
+            {
+                status: "published",
+                visibility: "public",
+            }
+        )
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)

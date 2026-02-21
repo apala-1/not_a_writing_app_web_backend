@@ -2,22 +2,40 @@ import mongoose from "mongoose";
 import { ProfileModel } from "../model/profile.model";
 import { HttpError } from "../errors/http-error";
 import { PostRepository } from "../repository/post.repository";
-import { IPost } from "../model/post.model";
+import { IPost, PostModel } from "../model/post.model";
 
 
 const postRepo = new PostRepository();
 
 export class PostService {
     async createPost(data: Partial<IPost>, userId: string): Promise<IPost> {
-        const postData: Partial<IPost> = { ...data, author: new mongoose.Types.ObjectId(userId) };
+        const isDraft = data.status === "draft";
+
+        const postData: Partial<IPost> = {
+            ...data,
+            author: new mongoose.Types.ObjectId(userId),
+            status: isDraft ? "draft" : "published",          // set status explicitly
+            visibility: isDraft ? "private" : "public",      // private if draft, else public
+            attachments: data.attachments || [],
+        };
+
         const post = await postRepo.createPost(postData);
 
         let profile = await ProfileModel.findOne({ user: userId });
         if (!profile) {
-            profile = await ProfileModel.create({ user: userId, postsCount: 0, following: [], likedPosts: [], savedPosts: [] });
+            profile = await ProfileModel.create({ 
+                user: userId, 
+                postsCount: 0, 
+                following: [], 
+                likedPosts: [], 
+                savedPosts: [] 
+            });
         }
-        profile.postsCount = (profile.postsCount ?? 0) + 1;
-        await profile.save();
+
+        if (!isDraft) {
+            profile.postsCount = (profile.postsCount ?? 0) + 1;
+            await profile.save();
+        }
 
         return post;
     }
@@ -38,7 +56,10 @@ export class PostService {
         if (!post) throw new HttpError("Post not found", 404);
         if (post.author.toString() !== userId) throw new HttpError("Unauthorized", 403);
 
-        return postRepo.updatePost(postId, data);
+        return postRepo.updatePost(postId, {
+            ...data,
+            attachments: data.attachments ?? [],
+        });
     }
 
     async deletePost(postId: string, userId: string) {
@@ -105,15 +126,23 @@ export class PostService {
     }
 
     // --- Feeds ---
-    async getFeed(userId: string, lastCreatedAt?: string, limit = 10) {
-        const profile = await ProfileModel.findOne({ user: userId });
-        if (!profile) throw new HttpError("Profile not found", 404);
+    // In postService
+async getFeed(userId: string, lastCreatedAt?: string, limit = 10) {
+  const filter: any = {
+    isDraft: false,        // exclude drafts
+    visibility: 'public', 
+  };
 
-        // map ObjectIds to strings
-        const followingIds = (profile.following ?? []).map(id => id.toString());
+  if (lastCreatedAt) {
+    filter.createdAt = { $lt: new Date(lastCreatedAt) };
+  }
 
-        return postRepo.getFeedPosts(followingIds, lastCreatedAt, limit);
-    }
+  const posts = await PostModel.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(limit);
+
+  return posts;
+}
 
     async getRankedFeed(userId: string, skip = 0, limit = 10) {
         console.log("User ID for feed:", userId);
