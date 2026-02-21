@@ -6,6 +6,7 @@ import { UserService } from "../services/user.service";
 import { success } from "zod";
 import { ProfileModel } from "../model/profile.model";
 import { PopulatedProfileType } from "../types/profile.type";
+import { PostModel } from "../model/post.model";
 
 declare global {
   namespace Express {
@@ -56,6 +57,27 @@ export class ProfileController {
       res.status(400).json({ success: false, message: err.message });
     }
   } 
+
+   async getOwnPosts(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+
+      // fetch posts where author matches the userId
+      const posts = await PostModel.find({ author: userId, status: "published" })
+                                   .sort({ createdAt: -1 }); // newest first
+
+      return res.status(200).json({
+        success: true,
+        data: posts
+      });
+    } catch (err: any) {
+      console.error(err);
+      return res.status(500).json({
+        success: false,
+        message: "Server error fetching user's posts"
+      });
+    }
+  }
 
   async getWholeProfile(req: Request, res: Response) {
   try {
