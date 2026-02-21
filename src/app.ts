@@ -7,6 +7,7 @@ import postRoutes from './routes/post.route';
 import bookRoutes from './routes/book.route';
 import profileRoutes from './routes/profile.route';
 import commentRoutes from './routes/comment.routes';
+import followRoutes from './routes/follow.route';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -39,5 +40,6 @@ app.use('/api/v1/post', postRoutes);
 app.use('/api/v1/book', bookRoutes);
 app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/comments', commentRoutes);
+app.use('/api/v1/follow', followRoutes);
 
 export default app;
