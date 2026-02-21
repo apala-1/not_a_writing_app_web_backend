@@ -78,6 +78,7 @@ export class ProfileController {
         userId: profile.user._id,
         name: profile.user.name,
         email: profile.user.email,
+        profilePicture: profile.user.profilePicture,
         bio: profile.user.bio,
         postsCount: profile.postsCount,
         followersCount: profile.followers.length,
