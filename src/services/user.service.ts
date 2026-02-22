@@ -11,6 +11,31 @@ const userRepository = new UserRepository();
 const profileService = new ProfileService();
 
 export class UserService {
+  private jwtSecret = process.env.JWT_SECRET || "supersecret";
+
+  generateToken(user: IUser): string {
+    return jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      this.jwtSecret,
+      { expiresIn: "7d" }
+    );
+  }
+
+  async loginUserWithGoogle(user: IUser): Promise<{ token: string; user: IUser }> {
+  // Check if profile already exists
+  const existingProfile = await profileService.findProfile(
+    user._id.toString()
+  );
+
+  if (!existingProfile) {
+    await profileService.createProfile(user._id.toString());
+  }
+
+  const token = this.generateToken(user);
+
+  return { user, token };
+}
+
   async createUser(data: CreateUserDTO): Promise<IUser> {
     const existing = await userRepository.getUserByEmail(data.email);
     if (existing) throw new HttpError("Email already in use", 403);

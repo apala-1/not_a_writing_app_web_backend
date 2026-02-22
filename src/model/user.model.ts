@@ -5,13 +5,21 @@ const UserSchema: Schema = new Schema<UserType>(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
-    password: { type: String, required: true, minlength: 6 },
+    password: {
+      type: String,
+      required: function (this: any): boolean {
+        return this.authProvider === "local";
+      },
+      minlength: 6,
+    },
     profilePicture: { type: String, default: "default-picture.png", trim: true },
     role: { type: String, enum: ["user", "admin"], default: "user" },
     bio: { type: String, default: "", trim: true },
     occupation: { type: String, default: "", trim: true },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
+    authProvider: { type: String, enum: ["local", "google", "facebook"], default: "local" },
+    googleId: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );

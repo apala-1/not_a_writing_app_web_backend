@@ -11,6 +11,8 @@ export const userSchema = z.object({
   resetPasswordToken: z.string().optional(),
   resetPasswordExpires: z.date().optional(),
   createdAt: z.date().optional().default(() => new Date()),
+  authProvider: z.enum(["local", "google", "facebook"]).default("local"),
+  googleId: z.string().optional(),
 });
 
 export type UserType = z.infer<typeof userSchema>;

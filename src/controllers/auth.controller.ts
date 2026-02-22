@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendEmail } from "../config/email";
 import { UserRepository } from "../repository/user.repository";
+import { OAuth2Client } from "google-auth-library";
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
@@ -14,6 +15,7 @@ interface MulterRequest extends Request {
 
 const userService = new UserService();
 const userRepository = new UserRepository();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export class AuthController {
   async register(req: MulterRequest, res: Response) {
@@ -170,5 +172,61 @@ async resetPassword(req: Request, res: Response) {
   }
 }
 
+async googleLogin(req: Request, res: Response) {
+    try {
+      const { idToken } = req.body;
+
+      if (!idToken) {
+        return res.status(400).json({ success: false, message: "Google token required" });
+      }
+
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+
+      if (!payload || !payload.email) {
+        return res.status(400).json({ success: false, message: "Invalid Google token" });
+      }
+
+      const { email, name, picture, sub } = payload;
+
+      // Find or create user
+      let user = await userRepository.getUserByEmail(email);
+
+      if (!user) {
+        user = await userRepository.createUser({
+          name,
+          email,
+          authProvider: "google",
+          googleId: sub,
+          profilePicture: picture,
+        });
+      } else if (!user.googleId) {
+        // Link existing local account to Google
+        user.googleId = sub;
+        user.authProvider = "google";
+        await user.save();
+      }
+
+      const { token } = await userService.loginUserWithGoogle(user);
+
+      res.cookie("accessToken", token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Google login successful",
+        data: { user, token },
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  }
 
 }
