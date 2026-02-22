@@ -21,5 +21,10 @@ router.get(
   authorizedMiddleware,
   ctrl.followCount.bind(ctrl)
 );
+router.get(
+  "/mutuals/:userId",
+  authorizedMiddleware,
+  ctrl.mutuals.bind(ctrl)
+);
 
 export default router;

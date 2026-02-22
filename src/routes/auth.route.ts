@@ -15,5 +15,6 @@ router.post("/reset-password", authController.resetPassword);
 router.get("/me", authorizedMiddleware, authController.getMe);
 router.put("/me", authorizedMiddleware, upload.single("profilePicture"), authController.updateMe);
 router.delete("/me", authorizedMiddleware, authController.deleteMe);
+router.post("/google-login", authController.googleLogin);
 
 export default router;

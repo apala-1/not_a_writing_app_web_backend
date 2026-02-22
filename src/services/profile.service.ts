@@ -16,6 +16,10 @@ export class ProfileService {
     return profile;
   }
 
+  async findProfile(userId: string): Promise<IProfile | null> {
+  return profileRepo.findByUserId(userId);
+}
+
   async follow(userId: string, targetUserId: string): Promise<IProfile> {
   if (userId === targetUserId) throw new Error("Cannot follow yourself");
 

@@ -47,4 +47,23 @@ export class FollowService {
     async getCounts(userId: string) {
         return followRepo.count(userId);
     }
+    async getMutuals(userId: string) {
+  // 1️⃣ Users I follow
+  const following = await FollowModel.find({
+    followerId: userId,
+  }).select("followedId");
+
+  const followingIds = following.map(f =>
+    f.followedId.toString()
+  );
+
+  // 2️⃣ Users who follow me
+  const followers = await FollowModel.find({
+    followedId: userId,
+    followerId: { $in: followingIds },
+  }).populate("followerId", "-password");
+
+  // 3️⃣ Return populated user objects
+  return followers.map(f => f.followerId);
+}
 }

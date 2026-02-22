@@ -104,4 +104,21 @@ async followCount(req: any, res: any) {
     return res.status(500).json({ success: false, message: error.message });
   }
 }
+async mutuals(req: Request, res: Response) {
+  try {
+    const userId = req.params.userId;
+
+    const data = await followService.getMutuals(userId);
+
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
 }
