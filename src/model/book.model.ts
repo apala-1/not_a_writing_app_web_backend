@@ -12,7 +12,18 @@ const bookSchema: Schema = new Schema<IBook>(
         chapters: [
             {
                 title: { type: String, required: true, trim: true },
-                content: Schema.Types.Mixed,
+                content: [
+                    {
+                        type: {
+                        type: String,
+                        enum: ["text", "image"],
+                        },
+                        value: {
+                            type: String,
+                            required: true,
+                        },
+                    }
+                ],
             }
         ],
         status: { type: String, enum: ["draft", "published"], default: "published" },
@@ -36,7 +47,10 @@ export interface IBook extends Document {
     noOfPages: number;
     chapters: {
         title: string;
-        content: any;
+        content: {
+            type: 'text' | 'image';
+            value: string;
+        };
     }[];
     createdAt: Date;
     updatedAt: Date;

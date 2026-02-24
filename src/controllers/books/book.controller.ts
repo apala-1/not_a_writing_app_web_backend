@@ -26,6 +26,13 @@ export class BookController {
 
     async createBook(req: Request, res: Response) {
         try {
+            if (req.body.chapters && typeof req.body.chapters === "string") {
+    try {
+        req.body.chapters = JSON.parse(req.body.chapters);
+    } catch (e) {
+        return res.status(400).json({ success: false, message: "Invalid chapters JSON" });
+    }
+}
             const parsed = CreateBookDTO.safeParse(req.body);
             if (!parsed.success) {
                 return res.status(400).json({

@@ -40,6 +40,10 @@ export class PostService {
         return post;
     }
 
+    async getMyPosts(userId: string) {
+    return await PostModel.find({ author: userId }).sort({ createdAt: -1 }).lean();
+}
+
     async getPostById(postId: string) {
         const post = await postRepo.getPostById(postId);
         if (!post) throw new HttpError("Post not found", 404);

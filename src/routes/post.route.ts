@@ -28,4 +28,6 @@ router.post("/:id/share", authorizedMiddleware, postController.addShare.bind(pos
 // Ranked / Algorithmic feed
 router.get("/ranked-feed/:userId", authorizedMiddleware, postController.getRankedFeed.bind(postController));
 
+router.get("/my-posts/:userId", authorizedMiddleware, postController.getMyPosts.bind(postController));
+
 export default router;
