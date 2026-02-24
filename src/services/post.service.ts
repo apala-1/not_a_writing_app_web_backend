@@ -51,9 +51,20 @@ export class PostService {
         return post;
     }
 
-    async getAllPosts(skip = 0, limit = 10) {
-        return postRepo.getAllPosts(skip, limit);
-    }
+    async getAllPosts(userId: string, skip = 0, limit = 10) {
+  const profile = await ProfileModel.findOne({ user: userId });
+
+  const likedIds = profile?.likedPosts.map(id => id.toString()) ?? [];
+  const savedIds = profile?.savedPosts.map(id => id.toString()) ?? [];
+
+  const posts = await postRepo.getAllPosts(skip, limit);
+
+  return posts.map(post => ({
+    ...post,
+    isLiked: likedIds.includes(post._id.toString()),
+    isSaved: savedIds.includes(post._id.toString()),
+  }));
+}
 
     async updatePost(postId: string, data: Partial<IPost>, userId: string) {
         const post = await postRepo.getPostById(postId);
@@ -89,41 +100,58 @@ export class PostService {
     }
 
     // --- Likes / Saves / Shares ---
-    async toggleLike(postId: string, userId: string): Promise<"liked" | "unliked"> {
-        const profile = await ProfileModel.findOne({ user: userId });
-        if (!profile) throw new HttpError("Profile not found", 404);
+    async toggleLike(postId: string, userId: string) {
+    const profile = await ProfileModel.findOne({ user: userId });
+    if (!profile) throw new HttpError("Profile not found", 404);
 
-        const alreadyLiked = profile.likedPosts?.some(id => id.toString() === postId);
-        if (alreadyLiked) {
-            profile.likedPosts = profile.likedPosts.filter(id => id.toString() !== postId);
-            await postRepo.decrementLikes(postId);
-            await profile.save();
-            return "unliked";
-        } else {
-            profile.likedPosts = [...(profile.likedPosts ?? []), new mongoose.Types.ObjectId(postId)];
-            await postRepo.incrementLikes(postId);
-            await profile.save();
-            return "liked";
-        }
+    const alreadyLiked = profile.likedPosts?.some(id => id.toString() === postId);
+    
+    // update profile
+    if (alreadyLiked) {
+        profile.likedPosts = profile.likedPosts.filter(id => id.toString() !== postId);
+    } else {
+        profile.likedPosts = [...(profile.likedPosts ?? []), new mongoose.Types.ObjectId(postId)];
     }
+    await profile.save();
 
-    async toggleSave(postId: string, userId: string): Promise<"saved" | "unsaved"> {
-        const profile = await ProfileModel.findOne({ user: userId });
-        if (!profile) throw new HttpError("Profile not found", 404);
+    // update post count
+    const post = await PostModel.findById(postId);
+    if (!post) throw new HttpError("Post not found", 404);
 
-        const alreadySaved = profile.savedPosts?.some(id => id.toString() === postId);
-        if (alreadySaved) {
-            profile.savedPosts = profile.savedPosts.filter(id => id.toString() !== postId);
-            await postRepo.decrementSaves(postId);
-            await profile.save();
-            return "unsaved";
-        } else {
-            profile.savedPosts = [...(profile.savedPosts ?? []), new mongoose.Types.ObjectId(postId)];
-            await postRepo.incrementSaves(postId);
-            await profile.save();
-            return "saved";
-        }
-    }
+    post.likesCount = alreadyLiked ? post.likesCount - 1 : post.likesCount + 1;
+    await post.save();
+
+    return post; // updated post
+}
+
+  // In PostService
+async toggleSave(postId: string, userId: string) {
+  const profile = await ProfileModel.findOne({ user: userId });
+  const post = await PostModel.findById(postId);
+
+  const alreadySaved = profile!.savedPosts?.some(
+    id => id.toString() === postId
+  );
+
+  let action: "saved" | "unsaved";
+
+  if (alreadySaved) {
+    profile!.savedPosts = profile!.savedPosts.filter(
+      id => id.toString() !== postId
+    );
+    post!.savesCount = Math.max(0, post!.savesCount - 1);
+    action = "unsaved";
+  } else {
+    profile!.savedPosts.push(new mongoose.Types.ObjectId(postId));
+    post!.savesCount += 1;
+    action = "saved";
+  }
+
+  await profile!.save();
+  await post!.save();
+
+  return { action, post };
+}
 
     async addShare(postId: string) {
         await postRepo.incrementShares(postId);

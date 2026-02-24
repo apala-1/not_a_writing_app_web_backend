@@ -126,7 +126,8 @@ export class PostController {
         try {
             const skip = parseInt(req.query.skip as string) || 0;
             const limit = parseInt(req.query.limit as string) || 10;
-            const posts = await postService.getAllPosts(skip, limit);
+            const userId = req.user!._id.toString();
+const posts = await postService.getAllPosts(userId, skip, limit);
             return res.status(200).json({ success: true, data: posts });
         } catch(err: any) {
             return res.status(500).json({ success: false, message: err.message });
@@ -184,30 +185,29 @@ async getFeed(req: Request, res: Response) {
 }
 
     async toggleLike(req: Request, res: Response) {
-        try {
-            const postId = req.params.postId;
-            const userId = req.user!._id.toString();
+  try {
+    const postId = req.params.postId;
+    const userId = req.user!._id.toString();
+    const updatedPost = await postService.toggleLike(postId, userId);
 
-            const result = await postService.toggleLike(postId, userId);
-
-            return res.status(200).json({ success: true, action: result });
-        } catch (err: any) {
-            return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
-        }
-    }
+    return res.status(200).json({ success: true, data: updatedPost });
+  } catch (err: any) {
+    return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
+  }
+}
 
     async toggleSave(req: Request, res: Response) {
-        try {
-            const postId = req.params.postId;
-            const userId = req.user!._id.toString();
+  try {
+    const postId = req.params.postId;
+    const userId = req.user!._id.toString();
 
-            const result = await postService.toggleSave(postId, userId);
+    const { action, post } = await postService.toggleSave(postId, userId);
 
-            return res.status(200).json({ success: true, action: result });
-        } catch (err: any) {
-            return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
-        }
-    }
+    return res.status(200).json({ success: true, data: post });
+  } catch (err: any) {
+    return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
+  }
+}
 
     async addShare(req: Request, res: Response) {
         try {

@@ -29,18 +29,17 @@ export class PostRepository implements IPostRepository {
         return PostModel.findById(id).exec();
     }
 
-    async getAllPosts(skip: number = 0, limit: number = 10) {
-        return PostModel.find(
-            {
-                status: "published",
-                visibility: "public",
-            }
-        )
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .exec();
-    }
+    async getAllPosts(skip = 0, limit = 10): Promise<IPost[]> {
+  return PostModel.find({
+    status: "published",
+    visibility: "public",
+  })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean()
+    .exec();
+}
 
     async updatePost(id: string, updateData: Partial<IPost>) {
         return PostModel.findByIdAndUpdate(id, updateData, {
