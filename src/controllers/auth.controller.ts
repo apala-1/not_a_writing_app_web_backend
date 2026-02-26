@@ -114,14 +114,18 @@ async forgotPassword(req: Request, res: Response) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    // generate raw token
     const resetToken = crypto.randomBytes(32).toString("hex");
 
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    // hash token before storing in DB
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 min
     await user.save();
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5050';
-    const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5050";
+    const resetUrl = `${clientUrl}/resetPass?token=${resetToken}`;
 
     await sendEmail(
       user.email,
@@ -143,21 +147,25 @@ async resetPassword(req: Request, res: Response) {
   try {
     const { token, password } = req.body;
 
+    // find user with non-expired token (hashed stored, raw received)
     const user = await UserModel.findOne({
-      resetPasswordToken: token,
       resetPasswordExpires: { $gt: new Date() },
     });
 
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid or expired token",
-      });
+      return res.status(400).json({ success: false, message: "Invalid or expired token" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // compare the raw token with hashed token in DB
+    const isValid = await bcrypt.compare(token, user.resetPasswordToken!);
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: "Invalid or expired token" });
+    }
 
-    user.password = hashedPassword;
+    // hash new password and save
+    user.password = await bcrypt.hash(password, 10);
+
+    // clear reset token
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
