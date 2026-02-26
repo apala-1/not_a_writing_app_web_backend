@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IAttachment {
   url: string;
-  type: "image" | "gif" | "file";
+  type: "image" | "gif" | "file" | "pjpeg" | "webp";
 }
 
 export interface IPost extends Document {
@@ -24,7 +24,7 @@ export interface IPost extends Document {
 
 const attachmentSchema: Schema = new Schema<IAttachment>({
   url: { type: String, required: true },
-  type: { type: String, enum: ["image", "gif", "file"], required: true }
+  type: { type: String, enum: ["image", "gif", "file", "pjpeg", "webp"], required: true }
 });
 
 const postSchema: Schema = new Schema<IPost>(

@@ -28,18 +28,37 @@ export class PostController {
                 });
             }
 
-            const getFileType = (mimetype: string): "file" | "image" | "gif" => {
-                if (mimetype === "image/gif") return "gif";
-                if(mimetype.startsWith("image/")) return "image";
-                return "file";
-            };
+            const getExtensionFromMime = (mimetype: string) => {
+  switch (mimetype) {
+    case "image/jpeg":
+    case "image/pjpeg":
+      return ".jpg";
+    case "image/png":
+      return ".png";
+    case "image/gif":
+      return ".gif";
+    case "image/webp":
+      return ".webp";
+    default:
+      return "";
+  }
+};
+
+
+const getAttachmentType = (
+  mimetype: string
+): "image" | "gif" | "file" => {
+  if (mimetype === "image/gif") return "gif";
+  if (mimetype.startsWith("image/")) return "image";
+  return "file";
+};
 
             const files = req.files as Express.Multer.File[] | undefined;
 
             const attachments = files?.map(file => (
                 {
                 url: `/uploads/posts/${file.filename}`,
-                type: getFileType(file.mimetype)
+                type: getAttachmentType(file.mimetype)
             })) ?? [];
 
             const post = await postService.createPost(
