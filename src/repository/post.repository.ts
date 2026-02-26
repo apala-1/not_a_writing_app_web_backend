@@ -37,6 +37,7 @@ export class PostRepository implements IPostRepository {
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
+    .populate("author", "name profilePicture") 
     .lean()
     .exec();
 }
