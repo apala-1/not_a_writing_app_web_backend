@@ -255,6 +255,27 @@ async getFeed(req: Request, res: Response) {
         }
     }
 
+    async getSavedPosts(req: Request, res: Response) {
+  try {
+    const userId = req.user!._id.toString();
+    const posts = await postService.getSavedPosts(userId);
+    return res.status(200).json({ success: true, data: posts });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+async getLikedPosts(req: Request, res: Response) {
+  try {
+    const userId = req.user!._id.toString();
+    const posts = await postService.getLikedPosts(userId);
+    return res.status(200).json({ success: true, data: posts });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+
     async getMyPosts(req: Request, res: Response) {
     try {
         if (!req.user) return res.status(401).json({ success: false, message: "Unauthorized" });

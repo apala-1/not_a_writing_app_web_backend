@@ -38,6 +38,63 @@ export class ProfileController {
     }
   }
 
+  // Fetch saved posts
+async getSavedPosts(req: Request, res: Response) {
+  try {
+    const profile = await ProfileModel.findOne({ user: req.user!._id })
+      .populate({ path: "savedPosts", match: { status: "published" } });
+
+    if (!profile) return res.status(404).json({ success: false, message: "Profile not found" });
+
+    return res.json({ success: true, data: profile.savedPosts });
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// Fetch liked posts
+async getLikedPosts(req: Request, res: Response) {
+  try {
+    const profile = await ProfileModel.findOne({ user: req.user!._id })
+      .populate({ path: "likedPosts", match: { status: "published" } });
+
+    if (!profile) return res.status(404).json({ success: false, message: "Profile not found" });
+
+    return res.json({ success: true, data: profile.likedPosts });
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+async getFollowers(req: Request, res: Response) {
+  try {
+    const profile = await ProfileModel.findOne({ user: req.params.userId }).populate("followers", "name email profilePicture");
+
+    if (!profile) return res.status(404).json({ success: false, message: "Profile not found" });
+
+    return res.json({ success: true, data: profile.followers });
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// Get following list
+async getFollowing(req: Request, res: Response) {
+  try {
+    const profile = await ProfileModel.findOne({ user: req.params.userId }).populate("following", "name email profilePicture");
+
+    if (!profile) return res.status(404).json({ success: false, message: "Profile not found" });
+
+    return res.json({ success: true, data: profile.following });
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
   async unfollow(req: Request, res: Response) {
     try {
       const parsed = FollowDTO.parse(req.body);

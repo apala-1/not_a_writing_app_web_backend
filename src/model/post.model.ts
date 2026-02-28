@@ -18,6 +18,8 @@ export interface IPost extends Document {
   sharesCount: number;
   savesCount: number;
   viewsCount: number;
+  likes: mongoose.Types.ObjectId[]; // users who liked
+  savedBy: mongoose.Types.ObjectId[]; // users who saved
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +43,8 @@ const postSchema: Schema = new Schema<IPost>(
     savesCount: { type: Number, default: 0 },
     viewsCount: { type: Number, default: 0 },
     visibility: { type: String, enum: ["public", "private"], default: "public" },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // users who liked
+    savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true } // automatically adds createdAt & updatedAt
 );

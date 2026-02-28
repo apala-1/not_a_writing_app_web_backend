@@ -99,6 +99,21 @@ export class PostService {
         await postRepo.incrementViews(postId);
     }
 
+    // post.service.ts
+async getSavedPosts(userId: string) {
+  const posts = await PostModel.find({ savedBy: userId })
+    .populate("author")
+    .sort({ createdAt: -1 });
+  return posts;
+}
+
+async getLikedPosts(userId: string) {
+  const posts = await PostModel.find({ likes: userId })
+    .populate("author")
+    .sort({ createdAt: -1 });
+  return posts;
+}
+
     // --- Likes / Saves / Shares ---
     async toggleLike(postId: string, userId: string) {
     const profile = await ProfileModel.findOne({ user: userId });

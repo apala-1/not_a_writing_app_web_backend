@@ -30,4 +30,7 @@ router.get("/ranked-feed/:userId", authorizedMiddleware, postController.getRanke
 
 router.get("/my-posts/:userId", authorizedMiddleware, postController.getMyPosts.bind(postController));
 
+router.get("/saved", authorizedMiddleware, postController.getSavedPosts.bind(postController));
+router.get("/liked", authorizedMiddleware, postController.getLikedPosts.bind(postController));
+
 export default router;
