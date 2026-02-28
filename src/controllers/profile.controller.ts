@@ -115,26 +115,28 @@ async getFollowing(req: Request, res: Response) {
     }
   } 
 
-   async getOwnPosts(req: Request, res: Response) {
-    try {
-      const { userId } = req.params;
+  async getOwnPosts(req: Request, res: Response) {
+  try {
+    const userId = req.user!._id.toString(); // current logged-in user
+    const posts = await PostModel.find({ author: req.params.userId, status: "published" })
+                                 .sort({ createdAt: -1 })
+                                 .lean(); // lean gives plain JS objects
 
-      // fetch posts where author matches the userId
-      const posts = await PostModel.find({ author: userId, status: "published" })
-                                   .sort({ createdAt: -1 }); // newest first
+    // Map posts to include isLiked and isSaved
+    const mappedPosts = posts.map(post => ({
+      ...post,
+      isLiked: post.likes?.some((id: any) => id.toString() === userId) || false,
+      isSaved: post.savedBy?.some((id: any) => id.toString() === userId) || false,
+      likesCount: post.likes?.length || 0,
+      savesCount: post.savedBy?.length || 0,
+    }));
 
-      return res.status(200).json({
-        success: true,
-        data: posts
-      });
-    } catch (err: any) {
-      console.error(err);
-      return res.status(500).json({
-        success: false,
-        message: "Server error fetching user's posts"
-      });
-    }
+    return res.status(200).json({ success: true, data: mappedPosts });
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
   }
+}
 
   async getWholeProfile(req: Request, res: Response) {
   try {

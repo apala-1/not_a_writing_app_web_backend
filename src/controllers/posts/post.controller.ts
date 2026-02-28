@@ -6,6 +6,9 @@ import path from "path";
 import fs from "fs";
 import { IUser } from "../../model/user.model";
 import { PostModel } from "../../model/post.model";
+import { HttpError } from "../../errors/http-error";
+import { ProfileModel } from "../../model/profile.model";
+import mongoose from "mongoose";
 
 const postService = new PostService();
 
@@ -206,7 +209,8 @@ async getFeed(req: Request, res: Response) {
     async toggleLike(req: Request, res: Response) {
   try {
     const postId = req.params.postId;
-    const userId = req.user!._id.toString();
+    const userId = req.user!._id.toString(); // from auth middleware
+
     const updatedPost = await postService.toggleLike(postId, userId);
 
     return res.status(200).json({ success: true, data: updatedPost });
@@ -215,17 +219,37 @@ async getFeed(req: Request, res: Response) {
   }
 }
 
-    async toggleSave(req: Request, res: Response) {
+    // POST /posts/:postId/save
+async toggleSave(req: Request, res: Response) {
   try {
     const postId = req.params.postId;
     const userId = req.user!._id.toString();
 
-    const { action, post } = await postService.toggleSave(postId, userId);
+    const updatedPost = await postService.toggleSave(postId, userId);
 
-    return res.status(200).json({ success: true, data: post });
+    return res.status(200).json({
+      success: true,
+      data: updatedPost
+    });
+
   } catch (err: any) {
-    return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
+    return res.status(err.statusCode ?? 500).json({
+      success: false,
+      message: err.message,
+    });
   }
+}
+
+// Fetch saved posts properly
+async getSavedPosts(userId: string) {
+  const profile = await ProfileModel.findOne({ user: userId }).lean();
+  if (!profile) throw new HttpError("Profile not found", 404);
+
+  const posts = await PostModel.find({ _id: { $in: profile.savedPosts ?? [] } })
+    .populate("author")
+    .sort({ createdAt: -1 });
+
+  return posts;
 }
 
     async addShare(req: Request, res: Response) {
@@ -254,16 +278,6 @@ async getFeed(req: Request, res: Response) {
             return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
         }
     }
-
-    async getSavedPosts(req: Request, res: Response) {
-  try {
-    const userId = req.user!._id.toString();
-    const posts = await postService.getSavedPosts(userId);
-    return res.status(200).json({ success: true, data: posts });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-}
 
 async getLikedPosts(req: Request, res: Response) {
   try {
