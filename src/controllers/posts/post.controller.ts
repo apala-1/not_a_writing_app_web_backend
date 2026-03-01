@@ -98,31 +98,41 @@ const getAttachmentType = (
             };
 
             const files = req.files as Express.Multer.File[] | undefined;
-            const attachments = files?.map(file => ({
-                url: `/uploads/posts/${file.filename}`,
-                type: getFileType(file.mimetype),
-            }));
 
-            if (attachments && attachments.length > 0) {
-                const oldPost = await postService.getPostById(req.params.id);
-                oldPost.attachments.forEach(file => {
-                    const filePath = path.join(process.cwd(), file.url);
-                    if(fs.existsSync(filePath)) {
-                        fs.unlinkSync(filePath);
-                    }
-                });
-            }
+// map new uploaded files
+const newAttachments = files?.map(file => ({
+  url: `/uploads/posts/${file.filename}`,
+  type: getFileType(file.mimetype),
+})) ?? [];
 
-            const updateData = {
-                ...parsed.data,
-                ...(attachments ? { attachments } : {}),
-            };
+// handle existing attachments sent from frontend
+const existingAttachmentsIds = Array.isArray(req.body.existingAttachments)
+  ? req.body.existingAttachments
+  : req.body.existingAttachments ? [req.body.existingAttachments] : [];
 
-            const updated = await postService.updatePost(
-                req.params.id,
-                updateData,
-                req.user!._id.toString()
-            );
+const oldPost = await postService.getPostById(req.params.id);
+
+// keep only existing attachments that weren’t deleted
+const remainingAttachments = oldPost.attachments.filter(att =>
+  existingAttachmentsIds.includes(att._id!.toString())
+);
+
+// combine new + remaining attachments
+const attachments = [...remainingAttachments, ...newAttachments];
+
+// update post with text fields + attachments
+const updateData = {
+  title: parsed.data.title,
+  description: parsed.data.description,
+  content: parsed.data.content,
+  attachments,
+};
+
+const updated = await postService.updatePost(
+  req.params.id,
+  updateData,
+  req.user!._id.toString()
+);
 
             return res.status(200).json({
                 success: true,

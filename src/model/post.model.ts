@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IAttachment {
+  _id?: string;
   url: string;
   type: "image" | "gif" | "file" | "pjpeg" | "webp";
 }
