@@ -12,11 +12,52 @@ import chatRoutes from './routes/chat.route'; // ✅ import chat routes
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import http from "http";
+import { Server } from "socket.io";
 
 dotenv.config();
 console.log(process.env.PORT);
 
 const app: Application = express();
+
+const server = http.createServer(app);
+
+export const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+const onlineUsers = new Map<string, string>();
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("join", (userId) => {
+    onlineUsers.set(userId, socket.id);
+  });
+
+  socket.on("sendMessage", ({ senderId, receiverId, message }) => {
+    const receiverSocket = onlineUsers.get(receiverId);
+
+    if (receiverSocket) {
+      io.to(receiverSocket).emit("receiveMessage", {
+        senderId,
+        receiverId,
+        message,
+        createdAt: new Date(),
+      });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    for (let [userId, socketId] of onlineUsers.entries()) {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+      }
+    }
+  });
+});
 
 // Middleware
 app.use(bodyParser.json());
