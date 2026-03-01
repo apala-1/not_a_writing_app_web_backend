@@ -9,7 +9,7 @@ export class CommentRepository {
 
   async findByPost(postId: string) {
     return Comment.find({ post: new Types.ObjectId(postId) })
-      .populate("user", "username email")
+      .populate("user", "_id name email profilePicture") 
       .sort({ createdAt: -1 });
   }
 
