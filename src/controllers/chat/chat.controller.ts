@@ -20,6 +20,37 @@ export class ChatController {
     }
   }
 
+  async markAsRead(req: Request, res: Response) {
+  try {
+    const { senderId } = req.body;
+    const receiverId = req.user!._id;
+
+    await ChatModel.updateMany(
+      { senderId, receiverId, read: false },
+      { $set: { read: true } }
+    );
+
+    res.status(200).json({ success: true, message: "Messages marked as read" });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+async getUnreadCounts(req: Request, res: Response) {
+  try {
+    const myId = req.user!._id;
+
+    const counts = await ChatModel.aggregate([
+      { $match: { receiverId: myId, read: false } },
+      { $group: { _id: "$senderId", unreadCount: { $sum: 1 } } },
+    ]);
+
+    res.status(200).json({ success: true, data: counts });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
   async getConversation(req: Request, res: Response) {
     try {
       const { userA, userB } = req.params;
