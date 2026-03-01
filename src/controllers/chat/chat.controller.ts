@@ -35,4 +35,71 @@ export class ChatController {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
+
+  async getMyConversations(req: Request, res: Response) {
+  try {
+    const myId = req.user!._id;
+
+    const conversations = await ChatModel.aggregate([
+      {
+        $match: {
+          $or: [
+            { senderId: myId },
+            { receiverId: myId }
+          ]
+        }
+      },
+      {
+        $project: {
+          otherUser: {
+            $cond: [
+              { $eq: ["$senderId", myId] },
+              "$receiverId",
+              "$senderId"
+            ]
+          },
+          message: 1,
+          createdAt: 1
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$otherUser",
+          lastMessage: { $first: "$message" },
+          lastTime: { $first: "$createdAt" }
+        }
+      },
+      // Lookup user info
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "userInfo"
+        }
+      },
+      { $unwind: "$userInfo" },
+      {
+        $project: {
+          _id: "$_id",
+          lastMessage: 1,
+          lastTime: 1,
+          name: "$userInfo.name",
+          profilePicture: "$userInfo.profilePicture"
+        }
+      },
+      // Filter out self (just in case)
+      {
+        $match: {
+          _id: { $ne: myId }
+        }
+      }
+    ]);
+
+    res.json({ success: true, data: conversations });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
 }

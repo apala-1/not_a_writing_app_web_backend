@@ -9,6 +9,7 @@ router.use(authorizedMiddleware);
 
 // Send a message
 router.post("/send", chatController.sendMessage.bind(chatController));
+router.get("/conversations", authorizedMiddleware, chatController.getMyConversations.bind(chatController));
 
 // Get conversation between two users
 router.get("/conversation/:userA/:userB", chatController.getConversation.bind(chatController));
