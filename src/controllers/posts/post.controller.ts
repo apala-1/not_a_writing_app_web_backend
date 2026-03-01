@@ -32,29 +32,29 @@ export class PostController {
             }
 
             const getExtensionFromMime = (mimetype: string) => {
-  switch (mimetype) {
-    case "image/jpeg":
-    case "image/pjpeg":
-      return ".jpg";
-    case "image/png":
-      return ".png";
-    case "image/gif":
-      return ".gif";
-    case "image/webp":
-      return ".webp";
-    default:
-      return "";
-  }
-};
+                switch (mimetype) {
+                    case "image/jpeg":
+                    case "image/pjpeg":
+                    return ".jpg";
+                    case "image/png":
+                    return ".png";
+                    case "image/gif":
+                    return ".gif";
+                    case "image/webp":
+                    return ".webp";
+                    default:
+                    return "";
+                }
+                };
 
 
-const getAttachmentType = (
-  mimetype: string
-): "image" | "gif" | "file" => {
-  if (mimetype === "image/gif") return "gif";
-  if (mimetype.startsWith("image/")) return "image";
-  return "file";
-};
+                const getAttachmentType = (
+                mimetype: string
+                ): "image" | "gif" | "file" => {
+                if (mimetype === "image/gif") return "gif";
+                if (mimetype.startsWith("image/")) return "image";
+                return "file";
+                };
 
             const files = req.files as Express.Multer.File[] | undefined;
 
@@ -66,7 +66,7 @@ const getAttachmentType = (
 
             const post = await postService.createPost(
                 {
-                    ...parsed.data, attachments
+                    ...parsed.data, attachments,  status: req.body.draft === "true" ? "draft" : "published",
                 }, req.user!._id.toString()
             );
 

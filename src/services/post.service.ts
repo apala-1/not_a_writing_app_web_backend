@@ -14,8 +14,8 @@ export class PostService {
         const postData: Partial<IPost> = {
             ...data,
             author: new mongoose.Types.ObjectId(userId),
-            status: isDraft ? "draft" : "published",          // set status explicitly
-            visibility: isDraft ? "private" : "public",      // private if draft, else public
+            status: isDraft ? "draft" : "published",      // draft vs published
+  visibility: isDraft ? "private" : "public", 
             attachments: data.attachments || [],
         };
 
