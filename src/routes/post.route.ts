@@ -9,6 +9,7 @@ const router = Router();
 // Basic CRUD
 router.get("/", authorizedMiddleware, postController.getAllPosts.bind(postController));
 router.get("/feed", authorizedMiddleware, postController.getFeed.bind(postController));
+router.get("/my-posts", authorizedMiddleware, postController.getMyPosts.bind(postController));
 router.get("/drafts", authorizedMiddleware, postController.getDrafts.bind(postController));
 router.get("/:id", authorizedMiddleware, postController.getPost.bind(postController));
 router.post("/", authorizedMiddleware, uploadPost.array("attachments", 5), postController.createPost.bind(postController));
@@ -29,7 +30,6 @@ router.post("/:id/share", authorizedMiddleware, postController.addShare.bind(pos
 // Ranked / Algorithmic feed
 router.get("/ranked-feed/:userId", authorizedMiddleware, postController.getRankedFeed.bind(postController));
 
-router.get("/my-posts/:userId", authorizedMiddleware, postController.getMyPosts.bind(postController));
 
 router.get("/saved", authorizedMiddleware, postController.getSavedPosts.bind(postController));
 router.get("/liked", authorizedMiddleware, postController.getLikedPosts.bind(postController));

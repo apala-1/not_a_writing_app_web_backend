@@ -25,6 +25,8 @@ declare global {
 export class BookController {
 
     async createBook(req: Request, res: Response) {
+        console.log("Incoming body:", req.body);
+console.log("Incoming file:", req.file);
         try {
             if (req.body.chapters && typeof req.body.chapters === "string") {
     try {

@@ -335,7 +335,9 @@ async getLikedPosts(req: Request, res: Response) {
     try {
         if (!req.user) return res.status(401).json({ success: false, message: "Unauthorized" });
 
-        const posts = await postService.getMyPosts(req.user._id.toString());
+        console.log("Fetching posts for user", req.user._id);
+const posts = await postService.getMyPosts(req.user._id.toString());
+console.log("Posts fetched", posts.length);
         return res.status(200).json({ success: true, data: posts });
     } catch (err: any) {
         return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
