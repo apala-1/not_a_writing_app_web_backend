@@ -3,22 +3,62 @@ import { ChatModel } from "../../model/chat.model";
 
 export class ChatController {
   async sendMessage(req: Request, res: Response) {
-    try {
-      const { receiverId, message } = req.body;
-      const senderId = req.user?._id; // TS now knows this exists
-      if (!senderId) {
-  return res.status(401).json({ success: false, message: "Unauthorized" });
-}
-      if (!senderId || !receiverId || !message) {
-        return res.status(400).json({ success: false, message: "Invalid data" });
-      }
+  try {
+    const senderId = req.user?._id;
+    const { receiverId, message } = req.body;
+    const file = req.file;
 
-      const chat = await ChatModel.create({ senderId, receiverId, message });
-      res.status(201).json({ success: true, data: chat });
-    } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+    if (!senderId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!receiverId || (!message && !file)) {
+      return res.status(400).json({ success: false, message: "Message or image required" });
     }
+
+    const chat = await ChatModel.create({
+      senderId,
+      receiverId,
+      type: file ? "image" : "text",
+      content: file ? `/uploads/chats/${file.filename}` : message,
+    });
+
+    res.status(201).json({ success: true, data: chat });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
   }
+}
+
+async editMessage(req: Request, res: Response) {
+  const { id } = req.params;
+  const { content } = req.body;
+  const userId = req.user?._id;
+
+  const chat = await ChatModel.findById(id);
+  if (!chat) return res.status(404).json({ success: false, message: "Not found" });
+
+  if (chat.senderId.toString() !== userId!.toString()) {
+    return res.status(403).json({ success: false, message: "Forbidden" });
+  }
+
+  chat.content = content;
+  await chat.save();
+
+  res.json({ success: true, data: chat });
+}
+
+async deleteMessage(req: Request, res: Response) {
+  const { id } = req.params;
+  const userId = req.user?._id;
+
+  const chat = await ChatModel.findById(id);
+  if (!chat) return res.status(404).json({ success: false, message: "Not found" });
+
+  if (chat.senderId.toString() !== userId!.toString()) {
+    return res.status(403).json({ success: false, message: "Forbidden" });
+  }
+
+  await ChatModel.findByIdAndDelete(id);
+
+  res.json({ success: true, message: "Message deleted" });
+}
 
   async markAsRead(req: Request, res: Response) {
   try {

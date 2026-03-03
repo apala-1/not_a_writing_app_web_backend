@@ -47,3 +47,17 @@ export const uploadPost = multer({ storage,
     }),
 });
 
+export const uploadChatImage = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, "uploads/chats"),
+    filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/pjpeg"];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Invalid file type"));
+    }
+    cb(null, true); // accepts file
+  },
+});
