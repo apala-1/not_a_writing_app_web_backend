@@ -24,6 +24,7 @@ const bookSchema: Schema = new Schema<IBook>(
                         },
                     }
                 ],
+                default: [],
             }
         ],
         status: { type: String, enum: ["draft", "published"], default: "published" },

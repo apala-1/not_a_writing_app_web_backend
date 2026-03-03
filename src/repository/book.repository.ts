@@ -20,12 +20,13 @@ export class BookRepository implements IBookRepository {
     }
     async getBookById(id: string): Promise<IBook | null> {
        if (!mongoose.Types.ObjectId.isValid(id)) return null;
-        return await BookModel.findById(id);
+        return await BookModel.findById(id).populate("author", "_id, name").exec();
     }
     async getAllBooks(skip: number = 0, limit: number = 10): Promise<IBook[]> {
-        return await BookModel.find().skip(skip).limit(limit).exec();
+        return await BookModel.find().skip(skip).limit(limit).populate("author", "_id, name").exec();
     }
     async updateBook(id: string, updateData: Partial<IBook>): Promise<IBook | null> {
+        console.log("Repository update:", id, updateData);
         return await BookModel.findByIdAndUpdate(id, updateData, {
             new: true,
             runValidators: true,
@@ -45,6 +46,6 @@ console.log("Found book:", book);
         return book;
     }
     async find(query: any, skip = 0, limit = 10): Promise<IBook[]> {
-        return BookModel.find(query).skip(skip).limit(limit);
+        return BookModel.find(query).populate("author", "_id name").skip(skip).limit(limit);
     }
 }

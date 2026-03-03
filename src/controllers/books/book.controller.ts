@@ -81,6 +81,8 @@ export class BookController {
 
     async updateBook(req: Request, res: Response) {
         try {
+            console.log("UpdateBook payload:", JSON.stringify(req.body, null, 2));
+        console.log("Book ID:", req.params.id);
             const parsed = EditBookDTO.safeParse(req.body);
             if (!parsed.success) {
                 return res.status(400).json({
@@ -116,6 +118,11 @@ export class BookController {
                 ...(parsed.data.visibility === "link" && { shareToken }),
             };
 
+console.log("Calling bookService.updateBook with:", {
+    id: req.params.id,
+    data: parsed.data,
+    userId: req.user!._id.toString(),
+});
             const updated = await bookService.updateBook(
                 req.params.id,
                 updateData,
@@ -150,6 +157,18 @@ export class BookController {
     }
 }
 
+// inside book.controller.ts
+async getMyBooks(req: Request, res: Response) {
+  try {
+    if (!req.user) 
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    const books = await bookService.getMyBooks(req.user._id.toString());
+    return res.status(200).json({ success: true, data: books });
+  } catch (err: any) {
+    return res.status(err.statusCode ?? 500).json({ success: false, message: err.message });
+  }
+}
 
     async getAllBooks(req: Request, res: Response) {
     try {

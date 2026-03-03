@@ -1,7 +1,7 @@
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { BookRepository } from "../repository/book.repository";
 import { CreateBookDTO, EditBookDTO } from "../dtos/book.dto";
-import { IBook } from "../model/book.model";
+import { BookModel, IBook } from "../model/book.model";
 
 const bookRepository = new BookRepository();
 
@@ -42,6 +42,16 @@ export class BookService {
     return book;
 }
 
+async getMyBooks(userId: string) {
+    // Optional: track favorites or something similar if you have that
+    const books = await BookModel.find({ author: userId })
+      .populate("author", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return books;
+  }
+
     async getAllBooks(userId: string, skip = 0, limit = 10): Promise<IBook[]> {
     // public books
     const publicBooks = await bookRepository.find({ visibility: "public" }, skip, limit);
@@ -60,29 +70,68 @@ export class BookService {
     return Array.from(new Set(allBooks));
 }
 
-    
-    async updateBook(
-        id: string,
-        data: Partial<EditBookDTO>,
-        userId: string
-    ): Promise<IBook> {
-        const book = await bookRepository.getBookById(id);
-        if (!book) throw new Error("Book not found");
-        if (book.author.toString() !== userId) throw new Error("Unauthorized");
+async updateBook(
+    id: string,
+    data: Partial<EditBookDTO>,
+    userId: string
+  ): Promise<IBook> {
+    console.log("updateBook called with:", { id, data, userId });
 
-        // Separate sharedWith from the rest
-        const { sharedWith, ...rest } = data;
+    try {
+      // 1. Fetch the book
+      const book = await bookRepository.getBookById(id);
+      if (!book) throw new Error("Book not found");
+      const mongoUserId = new mongoose.Types.ObjectId(userId);
 
-        // Convert sharedWith to ObjectId[]
-        const dbData: Partial<IBook> = {
-            ...rest,
-            ...(sharedWith ? { sharedWith: sharedWith.map(id => new mongoose.Types.ObjectId(id)) } : {})
-        };
+if (!book.author || !book.author.equals(mongoUserId)) {
+    throw new Error("Unauthorized");
+}
 
-        const updated = await bookRepository.updateBook(id, dbData);
-        if (!updated) throw new Error("Failed to update book");
-        return updated;
+      // 2. Separate sharedWith from the rest
+      const { sharedWith, ...rest } = data;
+
+      // 3. Clean chapters
+      const cleanedChapters = (rest.chapters || []).map((chapter: any) => ({
+        title: chapter.title || "Untitled Chapter",
+        content: (chapter.content || []).map((item: any) => ({
+          type: item.type === "text" || item.type === "image" ? item.type : "text",
+          value: item.value || "",
+        })),
+      }));
+
+      // 4. Prepare dbData safely
+      const dbData: Partial<IBook> = {
+        ...rest,
+        ...(sharedWith
+          ? { sharedWith: sharedWith.map((id) => new mongoose.Types.ObjectId(id)) }
+          : {}),
+        chapters: cleanedChapters,
+      };
+
+      // 5. Safe logging
+      try {
+        console.log("Final dbData for update:", JSON.stringify(dbData, null, 2));
+      } catch {
+        console.log("Final dbData for update (raw object):", dbData);
+      }
+
+      if (!dbData.chapters || !Array.isArray(dbData.chapters) || dbData.chapters.length === 0) {
+        throw new Error("No chapters to update");
+      }
+
+      console.log("Sample chapter:", JSON.stringify(dbData.chapters[0] || {}, null, 2));
+
+      // 6. Update in repository
+      const updated = await bookRepository.updateBook(id, dbData);
+      if (!updated) throw new Error("Failed to update book");
+
+      return updated;
+    } catch (err: any) {
+      // Add more info to error for easier debugging
+      console.error("Error in updateBook:", err.message, err.stack);
+      throw new Error(err.message || "Unexpected error while updating book");
     }
+  }
 
     async deleteBook(id: string, userId: string): Promise<void> {
         const book = await bookRepository.getBookById(id);

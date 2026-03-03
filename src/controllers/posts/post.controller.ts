@@ -66,7 +66,7 @@ export class PostController {
 
             const post = await postService.createPost(
                 {
-                    ...parsed.data, attachments,  status: req.body.draft === "true" ? "draft" : "published",
+                    ...parsed.data, attachments, status: (req.body.draft === "true" ? "draft" : "published") as "draft" | "published",
                 }, req.user!._id.toString()
             );
 
@@ -126,6 +126,7 @@ const updateData = {
   description: parsed.data.description,
   content: parsed.data.content,
   attachments,
+  status: (req.body.draft === "true" ? "draft" : "published") as "draft" | "published"
 };
 
 const updated = await postService.updatePost(
@@ -165,6 +166,36 @@ const posts = await postService.getAllPosts(userId, skip, limit);
             return res.status(500).json({ success: false, message: err.message });
         }
     }
+
+    async saveAsDraft(req: Request, res: Response) {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!._id.toString();
+
+    const post = await postService.getPostById(postId);
+
+    if (!post)
+      return res.status(404).json({ success: false, message: "Post not found" });
+
+    if (post.author.toString() !== userId)
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+
+    const updated = await postService.updatePost(
+      postId,
+      { status: "draft" },
+      userId
+    );
+
+    return res.status(200).json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(err.statusCode ?? 500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+    
     async deletePost(req: Request, res: Response) {
         try {
             const post = await postService.getPostById(req.params.id);

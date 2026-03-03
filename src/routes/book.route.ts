@@ -8,6 +8,7 @@ const router = Router();
 
 router.use(authorizedMiddleware);
 
+router.get("/my-books", bookController.getMyBooks.bind(bookController)); // ← your new endpoint
 router.get("/", bookController.getAllBooks.bind(bookController));
 router.get("/drafts", bookController.getDrafts.bind(bookController));
 router.get("/token/:shareToken", bookController.getBookByToken.bind(bookController));

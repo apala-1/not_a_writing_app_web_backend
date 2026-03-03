@@ -17,6 +17,7 @@ router.delete("/:id", authorizedMiddleware, postController.deletePost.bind(postC
 
 // Views
 router.post("/:id/view", authorizedMiddleware, postController.addView.bind(postController));
+router.post("/:id/save-draft", authorizedMiddleware, postController.saveAsDraft.bind(postController));
 
 // Likes & Saves (toggle)
 router.post("/toggle-like/:postId", authorizedMiddleware, postController.toggleLike.bind(postController));
