@@ -41,7 +41,10 @@ const bookSchema: Schema = new Schema<IBook>(
 export interface IBook extends Document {
     title: string;
     description: string;
-    author: mongoose.Types.ObjectId;
+    author: mongoose.Types.ObjectId | {
+  _id: mongoose.Types.ObjectId;
+  name?: string;
+};
     coverPhoto: 'image' | 'file';
     coverPhotoUrl: string;
     noOfChapters: number;

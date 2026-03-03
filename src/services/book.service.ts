@@ -27,7 +27,12 @@ export class BookService {
     }
 
     if (book.visibility === "private") {
-        const isAuthor = book.author.equals(mongoUserId);
+        const authorId =
+  book.author instanceof mongoose.Types.ObjectId
+    ? book.author
+    : book.author._id;
+
+const isAuthor = authorId.equals(mongoUserId);
         const isSharedWith = book.sharedWith?.some(id => id.equals(mongoUserId));
         if (!isAuthor && !isSharedWith) throw new Error("Unauthorized"); // 403
         return book;
@@ -35,7 +40,14 @@ export class BookService {
 
     if (book.visibility === "link") {
         // only author can access via /books/:id
-        if (!book.author.equals(mongoUserId)) throw new Error("Unauthorized");
+        const authorId =
+  book.author instanceof mongoose.Types.ObjectId
+    ? book.author
+    : book.author._id;
+
+if (authorId.toString() !== userId) {
+  throw new Error("Unauthorized");
+}
         return book;
     }
 
@@ -83,8 +95,13 @@ async updateBook(
       if (!book) throw new Error("Book not found");
       const mongoUserId = new mongoose.Types.ObjectId(userId);
 
-if (!book.author || !book.author.equals(mongoUserId)) {
-    throw new Error("Unauthorized");
+const authorId =
+  book.author instanceof mongoose.Types.ObjectId
+    ? book.author
+    : book.author._id;
+
+if (!authorId.equals(mongoUserId)) {
+  throw new Error("Unauthorized");
 }
 
       // 2. Separate sharedWith from the rest
@@ -115,9 +132,11 @@ if (!book.author || !book.author.equals(mongoUserId)) {
         console.log("Final dbData for update (raw object):", dbData);
       }
 
-      if (!dbData.chapters || !Array.isArray(dbData.chapters) || dbData.chapters.length === 0) {
-        throw new Error("No chapters to update");
-      }
+      if (!dbData.chapters || dbData.chapters.length === 0) {
+  const error: any = new Error("A book must have at least one chapter");
+  error.statusCode = 400;
+  throw error;
+}
 
       console.log("Sample chapter:", JSON.stringify(dbData.chapters[0] || {}, null, 2));
 
@@ -133,13 +152,22 @@ if (!book.author || !book.author.equals(mongoUserId)) {
     }
   }
 
-    async deleteBook(id: string, userId: string): Promise<void> {
-        const book = await bookRepository.getBookById(id);
-        if (!book) throw new Error("Book not found");
-        if (book.author.toString() !== userId) throw new Error("Unauthorized");
-        const deleted = await bookRepository.deleteBook(id);
-        if (!deleted) throw new Error("Failed to delete book");
-    }
+   async deleteBook(id: string, userId: string): Promise<void> {
+  const book = await bookRepository.getBookById(id);
+  if (!book) throw new Error("Book not found");
+
+  const authorId =
+    book.author instanceof mongoose.Types.ObjectId
+      ? book.author
+      : book.author._id;
+
+  if (!authorId.equals(new mongoose.Types.ObjectId(userId))) {
+    throw new Error("Unauthorized");
+  }
+
+  const deleted = await bookRepository.deleteBook(id);
+  if (!deleted) throw new Error("Failed to delete book");
+}
     async getDrafts(userId: string): Promise<IBook[]> {
         return await bookRepository.getDrafts(userId);
     }

@@ -194,19 +194,32 @@ async getMyBooks(req: Request, res: Response) {
         try {
             const book = await bookService.getBookById(req.params.id);
 
-            if (book.author.toString() !== req.user!._id.toString()) {
-                return res.status(403).json({
-                    success: false,
-                    message: "Unauthorized",
-                });
-            }
+            const authorId =
+  book.author instanceof mongoose.Types.ObjectId
+    ? book.author.toString()
+    : book.author._id.toString();
+
+    console.log("Author ID:", authorId);
+    console.log("Requesting user ID:", req.user!._id.toString());
+
+if (authorId !== req.user!._id.toString()) {
+  return res.status(403).json({
+    success: false,
+    message: "Unauthorized",
+  });
+}
 
             if (book.coverPhotoUrl) {
-                const filePath = path.join(process.cwd(), book.coverPhotoUrl);
-                if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath);
-                }
-            }
+  const cleanPath = book.coverPhotoUrl.startsWith("/")
+    ? book.coverPhotoUrl.slice(1)
+    : book.coverPhotoUrl;
+
+  const filePath = path.join(process.cwd(), cleanPath);
+
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+}
 
             await bookService.deleteBook(
                 req.params.id,
