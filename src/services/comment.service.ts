@@ -1,6 +1,7 @@
 import { CommentRepository } from "../repository/comment.repository";
 import { PostRepository } from "../repository/post.repository";
 import { Types } from "mongoose";
+import { Comment } from "../model/comment.model";
 
 export class CommentService {
   private repo = new CommentRepository();
@@ -34,4 +35,21 @@ export class CommentService {
 
     return deleted;
   }
+
+  async replyToComment(userId: string, postId: string, content: string, parentCommentId: string) {
+  const reply = await this.repo.create({
+    user: new Types.ObjectId(userId),
+    post: new Types.ObjectId(postId),
+    content,
+    parentComment: new Types.ObjectId(parentCommentId),
+  });
+
+  // update parent comment
+  await Comment.findByIdAndUpdate(parentCommentId, {
+    $push: { replies: reply._id },
+  });
+
+  await this.postRepo.incrementComments(postId);
+  return reply;
+}
 }

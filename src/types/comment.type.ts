@@ -7,6 +7,8 @@ export interface IComment {
   post: Types.ObjectId;
   user: Types.ObjectId | IUser;
   content: string;
+  parentComment?: Types.ObjectId | null;
+  replies?: IComment[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -16,6 +18,8 @@ export type PopulatedCommentType = {
   _id?: Types.ObjectId;
   post: Types.ObjectId;
   content: string;
+  parentComment?: Types.ObjectId | null;
+  replies?: PopulatedCommentType[];
   createdAt?: Date;
   updatedAt?: Date;
 }

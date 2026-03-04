@@ -5,6 +5,7 @@ import { authorizedMiddleware } from "../middlewares/authorized.middleware";
 const router = Router();
 const controller = new CommentController();
 
+router.post("/reply", authorizedMiddleware, controller.reply.bind(controller));
 router.get(
   "/whole-comment/:userId",
   controller.getWholeCommentWithProfile.bind(controller)

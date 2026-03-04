@@ -19,6 +19,17 @@ const commentSchema = new Schema<IComment>(
       trim: true,
       minlength: 1,
     },
+    parentComment: {
+      type: Schema.Types.ObjectId,
+      ref: "Comment",
+      default: null,
+    },
+    replies: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Comment",
+      },
+    ],
   },
   { timestamps: true }
 );

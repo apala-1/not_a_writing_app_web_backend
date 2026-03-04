@@ -8,10 +8,38 @@ export class CommentRepository {
   }
 
   async findByPost(postId: string) {
-    return Comment.find({ post: new Types.ObjectId(postId) })
-      .populate("user", "_id name email profilePicture") 
-      .sort({ createdAt: -1 });
-  }
+  const postObjectId = new Types.ObjectId(postId);
+
+  const comments = await Comment.find({
+    post: postObjectId,
+    parentComment: null
+  })
+    .populate("user", "_id name email profilePicture")
+    .sort({ createdAt: -1 });
+
+  const commentIds = comments.map(c => c._id);
+
+  const replies = await Comment.find({
+    parentComment: { $in: commentIds }
+  })
+    .populate("user", "_id name email profilePicture")
+    .sort({ createdAt: 1 });
+
+  const replyMap = new Map();
+
+  replies.forEach(reply => {
+    const parentId = reply.parentComment!.toString();
+    if (!replyMap.has(parentId)) {
+      replyMap.set(parentId, []);
+    }
+    replyMap.get(parentId).push(reply);
+  });
+
+  return comments.map(comment => ({
+    ...comment.toObject(),
+    replies: replyMap.get(comment._id.toString()) || []
+  }));
+}
 
   async update(commentId: string, userId: string, content: string) {
   return Comment.findOneAndUpdate(
@@ -25,9 +53,15 @@ export class CommentRepository {
 }
 
   async delete(commentId: string, userId: string) {
-    return Comment.findOneAndDelete({
-      _id: new Types.ObjectId(commentId),
-      user: new Types.ObjectId(userId),
-    });
+  const comment = await Comment.findOneAndDelete({
+    _id: new Types.ObjectId(commentId),
+    user: new Types.ObjectId(userId),
+  });
+
+  if (comment) {
+    await Comment.deleteMany({ parentComment: comment._id });
   }
+
+  return comment;
+}
 }

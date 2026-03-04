@@ -149,4 +149,20 @@ export class CommentController {
     });
   }
 }
+
+async reply(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user.id;
+    const { postId, parentCommentId, content } = req.body;
+
+    const reply = await service.replyToComment(userId, postId, content, parentCommentId);
+
+    res.status(201).json({
+      success: true,
+      data: reply,
+    });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+}
 }
