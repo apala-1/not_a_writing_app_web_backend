@@ -87,19 +87,23 @@ async getAllPosts(req: Request, res: Response) {
     }
   }
 
-  async createPost(req: Request, res: Response) {
-    try {
-      const post = await postService.createPost(
-        req.body,
-        req.body.authorId // admin must provide authorId
-      );
-
-      return res.status(201).json({ success: true, data: post });
-    } catch (err: any) {
-      return res.status(err.statusCode ?? 500).json({
-        success: false,
-        message: err.message,
-      });
+ async createPost(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
+
+    // convert ObjectId to string
+    const userId = req.user._id.toString();
+
+    const post = await postService.createPost(req.body, userId);
+
+    return res.status(201).json({ success: true, data: post });
+  } catch (err: any) {
+    return res.status(err.statusCode ?? 500).json({
+      success: false,
+      message: err.message,
+    });
   }
 }
+};
