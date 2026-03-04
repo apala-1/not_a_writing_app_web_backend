@@ -10,6 +10,7 @@ import commentRoutes from './routes/comment.routes';
 import followRoutes from './routes/follow.route';
 import chatRoutes from './routes/chat.route'; // ✅ import chat routes
 import uploadRoutes from './routes/upload.route'; // ✅ import upload routes
+import adminPostRoutes from './routes/admin/post.route'; // ✅ import admin post routes
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -86,5 +87,5 @@ app.use('/api/v1/comments', commentRoutes);
 app.use('/api/v1/follow', followRoutes);
 app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/upload', uploadRoutes);
-
+app.use('/api/v1/admin/posts', adminPostRoutes);
 export default app;
