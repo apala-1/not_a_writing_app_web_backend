@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import { PostService } from "../../services/post.service";
-import { PostModel } from "../../model/post.model";
+import { IAttachment, PostModel } from "../../model/post.model";
 import fs from "fs";
 import path from "path";
+import mongoose from "mongoose";
 
 const postService = new PostService();
 
@@ -46,23 +47,66 @@ async getAllPosts(req: Request, res: Response) {
     }
   }
 
-  async updatePost(req: Request, res: Response) {
+async updatePost(req: Request, res: Response) {
     try {
-      const updated = await PostModel.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true }
+      const postId = req.params.id;
+      const post = await PostModel.findById(postId);
+
+      if (!post) {
+        return res.status(404).json({ success: false, message: "Post not found" });
+      }
+
+      // 1️⃣ Get fields from req.body
+      const { title, content, existingAttachments } = req.body;
+
+      // Ensure existingAttachments is always an array of strings
+      const keepIds: string[] = existingAttachments
+        ? Array.isArray(existingAttachments)
+          ? existingAttachments
+          : [existingAttachments]
+        : [];
+
+      // 2️⃣ Filter out removed attachments from DB and delete from disk
+      const removedAttachments = post.attachments.filter(
+        (att) => !keepIds.includes(att._id as string)
       );
 
-      if (!updated)
-        return res.status(404).json({ success: false, message: "Post not found" });
+      for (const att of removedAttachments) {
+        const filePath = path.join(process.cwd(), att.url);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
 
-      return res.status(200).json({ success: true, data: updated });
+      // 3️⃣ Keep only attachments that are still there
+      post.attachments = post.attachments.filter((att) =>
+        keepIds.includes(att._id as string)
+      );
+
+      // 4️⃣ Add newly uploaded files (if any)
+      if (req.files && Array.isArray(req.files)) {
+        const files = req.files as Express.Multer.File[];
+        const newAttachments: IAttachment[] = files.map((f) => ({
+          _id: new mongoose.Types.ObjectId().toString(), // string _id
+          url: `/uploads/posts/${f.filename}`,
+          type: "image", // adjust based on file type if needed
+        }));
+        post.attachments.push(...newAttachments);
+      }
+
+      // 5️⃣ Update title/content
+      if (title) post.title = title;
+      if (content) post.content = content;
+
+      await post.save();
+
+      return res.status(200).json({ success: true, data: post });
     } catch (err: any) {
+      console.error("Update Post Error:", err);
       return res.status(500).json({ success: false, message: err.message });
     }
   }
-
+  
   async deletePost(req: Request, res: Response) {
     try {
       const post = await PostModel.findById(req.params.id);
