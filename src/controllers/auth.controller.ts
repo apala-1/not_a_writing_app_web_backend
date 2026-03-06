@@ -132,7 +132,7 @@ async forgotPassword(req: Request, res: Response) {
       user.email,
       "Password Reset",
       `<p>You requested a password reset</p>
-       <p>Click here: <a href="${resetUrl}">${resetUrl}</a></p>`
+       <p>Click here to reset your password: <a href="${resetUrl}">Reset Password</a></p>`
     );
 
     return res.status(200).json({
