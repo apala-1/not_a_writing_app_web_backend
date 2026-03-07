@@ -42,7 +42,11 @@ export class ProfileController {
 async getSavedPosts(req: Request, res: Response) {
   try {
     const profile = await ProfileModel.findOne({ user: req.user!._id })
-      .populate({ path: "savedPosts", match: { status: "published" } });
+  .populate({
+    path: "savedPosts",
+    match: { status: "published" },
+    populate: { path: "author", select: "name profilePicture" },
+  });
 
     if (!profile) return res.status(404).json({ success: false, message: "Profile not found" });
 
@@ -56,8 +60,12 @@ async getSavedPosts(req: Request, res: Response) {
 // Fetch liked posts
 async getLikedPosts(req: Request, res: Response) {
   try {
-    const profile = await ProfileModel.findOne({ user: req.user!._id })
-      .populate({ path: "likedPosts", match: { status: "published" } });
+const profile = await ProfileModel.findOne({ user: req.user!._id })
+  .populate({
+    path: "likedPosts",
+    match: { status: "published" },
+    populate: { path: "author", select: "name profilePicture" },
+  });
 
     if (!profile) return res.status(404).json({ success: false, message: "Profile not found" });
 
