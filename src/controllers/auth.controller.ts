@@ -8,6 +8,7 @@ import crypto from "crypto";
 import { sendEmail } from "../config/email";
 import { UserRepository } from "../repository/user.repository";
 import { OAuth2Client } from "google-auth-library";
+import { AccountService } from "../services/account.service";
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
@@ -16,6 +17,8 @@ interface MulterRequest extends Request {
 const userService = new UserService();
 const userRepository = new UserRepository();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const accountService = new AccountService();
+
 
 export class AuthController {
   async register(req: MulterRequest, res: Response) {
@@ -97,8 +100,7 @@ return res.status(200).json({
 
 async deleteMe(req: Request, res: Response) {
   try {
-    const deleted = await userRepository.deleteUser(req.user!._id.toString());
-    if (!deleted) return res.status(404).json({ success: false, message: "User not found" });
+    await accountService.deleteAccount(req.user!._id.toString());
     return res.status(200).json({ success: true, message: "User deleted" });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
