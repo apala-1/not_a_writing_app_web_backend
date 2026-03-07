@@ -1,13 +1,22 @@
 import { Request, Response } from "express";
 import { ChatModel } from "../../model/chat.model";
+import { io, getReceiverSocketId } from "../../config/socket/socket";
+
+function chatToSocketPayload(chat: any) {
+  const obj = chat.toObject ? chat.toObject() : chat;
+  return {
+    ...obj,
+    _id: obj._id?.toString?.() ?? String(obj._id),
+    senderId: obj.senderId?.toString?.() ?? String(obj.senderId),
+    receiverId: obj.receiverId?.toString?.() ?? String(obj.receiverId),
+  };
+}
 
 export class ChatController {
   async sendMessage(req: Request, res: Response) {
   try {
     const senderId = req.user?._id;
     const { receiverId, message } = req.body;
-    console.log("Received message:", { senderId, receiverId, message, file: req.file });
-    console.log("Token userId:", req.user?._id);
     const file = req.file;
 
     if (!senderId) return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -22,28 +31,52 @@ export class ChatController {
       content: file ? `/uploads/chats/${file.filename}` : message,
     });
 
-    res.status(201).json({ success: true, data: chat });
+    const payload = chatToSocketPayload(chat);
+
+    const receiverSocketId = getReceiverSocketId(receiverId.toString());
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("chat:new", payload);
+    }
+
+    const senderSocketId = getReceiverSocketId(senderId.toString());
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("chat:new", payload);
+    }
+
+    return res.status(201).json({ success: true, data: payload }); // ✅ return once
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message });
   }
 }
 
 async editMessage(req: Request, res: Response) {
-  const { id } = req.params;
-  const { content } = req.body;
-  const userId = req.user?._id;
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+    const userId = req.user?._id;
 
-  const chat = await ChatModel.findById(id);
-  if (!chat) return res.status(404).json({ success: false, message: "Not found" });
+    const chat = await ChatModel.findById(id);
+    if (!chat) return res.status(404).json({ success: false, message: "Not found" });
 
-  if (chat.senderId.toString() !== userId!.toString()) {
-    return res.status(403).json({ success: false, message: "Forbidden" });
+    if (chat.senderId.toString() !== userId!.toString()) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+
+    chat.content = content;
+    await chat.save();
+
+    const payload = chatToSocketPayload(chat);
+
+    const receiverSocketId = getReceiverSocketId(payload.receiverId);
+    const senderSocketId = getReceiverSocketId(payload.senderId);
+
+    if (receiverSocketId) io.to(receiverSocketId).emit("chat:edited", payload);
+    if (senderSocketId) io.to(senderSocketId).emit("chat:edited", payload);
+
+    return res.json({ success: true, data: payload }); // ✅ return once
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
   }
-
-  chat.content = content;
-  await chat.save();
-
-  res.json({ success: true, data: chat });
 }
 
 async deleteMessage(req: Request, res: Response) {
@@ -57,9 +90,18 @@ async deleteMessage(req: Request, res: Response) {
     return res.status(403).json({ success: false, message: "Forbidden" });
   }
 
-  await ChatModel.findByIdAndDelete(id);
+  const receiverId = chat.receiverId.toString();
+const senderId = chat.senderId.toString();
 
-  res.json({ success: true, message: "Message deleted" });
+await ChatModel.findByIdAndDelete(id);
+
+const receiverSocketId = getReceiverSocketId(receiverId);
+const senderSocketId = getReceiverSocketId(senderId);
+
+if (receiverSocketId) io.to(receiverSocketId).emit("chat:deleted", { id: id.toString() });
+if (senderSocketId) io.to(senderSocketId).emit("chat:deleted", { id: id.toString() });
+
+res.json({ success: true, message: "Message deleted" });
 }
 
   async markAsRead(req: Request, res: Response) {
@@ -134,7 +176,7 @@ async getUnreadCounts(req: Request, res: Response) {
               "$senderId"
             ]
           },
-          message: 1,
+          content: 1,
           createdAt: 1
         }
       },
@@ -142,7 +184,7 @@ async getUnreadCounts(req: Request, res: Response) {
       {
         $group: {
           _id: "$otherUser",
-          lastMessage: { $first: "$message" },
+          lastMessage: { $first: "$content" },
           lastTime: { $first: "$createdAt" }
         }
       },
