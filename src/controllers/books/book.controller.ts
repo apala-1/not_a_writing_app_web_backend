@@ -81,68 +81,100 @@ console.log("Incoming file:", req.file);
         }
     }
 
-    async updateBook(req: Request, res: Response) {
-        try {
-            console.log("UpdateBook payload:", JSON.stringify(req.body, null, 2));
-        console.log("Book ID:", req.params.id);
-            const parsed = EditBookDTO.safeParse(req.body);
-            if (!parsed.success) {
-                return res.status(400).json({
-                    success: false,
-                    message: z.prettifyError(parsed.error),
-                });
-            }
-
-            let shareToken: string | undefined;
-            if (parsed.data.visibility === "link") {
-                shareToken = crypto.randomBytes(16).toString("hex");
-            }
-
-            const file = req.file as Express.Multer.File | undefined;
-
-            if (file) {
-                const oldBook = await bookService.getBookById(req.params.id);
-
-                if (oldBook.coverPhotoUrl) {
-                    const oldPath = path.join(process.cwd(), oldBook.coverPhotoUrl);
-                    if (fs.existsSync(oldPath)) {
-                        fs.unlinkSync(oldPath);
-                    }
-                }
-            }
-
-            const updateData = {
-                ...parsed.data,
-                ...(file && { 
-                    coverPhoto: file.mimetype.startsWith("image") ? "image" : "file",
-                    coverPhotoUrl: `/uploads/books/${file.filename}` 
-                }),
-                ...(parsed.data.visibility === "link" && { shareToken }),
-            };
-
-console.log("Calling bookService.updateBook with:", {
-    id: req.params.id,
-    data: parsed.data,
-    userId: req.user!._id.toString(),
-});
-            const updated = await bookService.updateBook(
-                req.params.id,
-                updateData,
-                req.user!._id.toString()
-            );
-
-            return res.status(200).json({
-                success: true,
-                data: updated,
-            });
-
-        } catch (err: any) {
-            return res.status(500).json({
-                success: false,
-                message: err.message,
-            });
-        }
+  async updateBook(req: Request, res: Response) {
+  try {
+    // ✅ FIX: parse chapters if it came from multipart/form-data
+    if (req.body.chapters && typeof req.body.chapters === "string") {
+      try {
+        req.body.chapters = JSON.parse(req.body.chapters);
+      } catch (e) {
+        return res.status(400).json({ success: false, message: "Invalid chapters JSON" });
+      }
     }
+
+    console.log("UpdateBook payload:", JSON.stringify(req.body, null, 2));
+    console.log("Book ID:", req.params.id);
+
+    const parsed = EditBookDTO.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: z.prettifyError(parsed.error),
+      });
+    }
+
+    let shareToken: string | undefined;
+    if (parsed.data.visibility === "link") {
+      shareToken = crypto.randomBytes(16).toString("hex");
+    }
+
+    const file = req.file as Express.Multer.File | undefined;
+
+    if (file) {
+      const oldBook = await bookService.getBookById(req.params.id);
+
+      if (oldBook.coverPhotoUrl) {
+        const oldPath = path.join(process.cwd(), oldBook.coverPhotoUrl);
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+    }
+
+    const updateData = {
+      ...parsed.data,
+      ...(file && {
+        coverPhoto: file.mimetype.startsWith("image") ? "image" : "file",
+        coverPhotoUrl: `/uploads/books/${file.filename}`,
+      }),
+      ...(parsed.data.visibility === "link" && { shareToken }),
+    };
+
+    console.log("Calling bookService.updateBook with:", {
+      id: req.params.id,
+      data: parsed.data,
+      userId: req.user!._id.toString(),
+    });
+
+    const updated = await bookService.updateBook(req.params.id, updateData, req.user!._id.toString());
+
+    return res.status(200).json({
+      success: true,
+      data: updated,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+async uploadChapterImage(req: Request, res: Response) {
+  try {
+    const file = req.file as Express.Multer.File | undefined;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: "Image is required",
+      });
+    }
+
+    // Return URL to be stored in chapters[].content[].value
+    return res.status(201).json({
+      success: true,
+      data: {
+        url: `/uploads/books/chapters/${file.filename}`,
+      },
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
 
     async getBook(req: Request, res: Response) {
     try {

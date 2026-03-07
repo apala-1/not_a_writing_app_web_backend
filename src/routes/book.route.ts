@@ -1,12 +1,18 @@
 import { Router } from "express";
 import { BookController } from "../controllers/books/book.controller";
 import { authorizedMiddleware } from "../middlewares/authorized.middleware";
-import { uploadBook } from "../config/multer";
+import { uploadBook, uploadBookChapterImage } from "../config/multer";
 
 const bookController = new BookController();
 const router = Router();
 
 router.use(authorizedMiddleware);
+
+router.post(
+  "/upload-chapter-image",
+  uploadBookChapterImage.single("image"),
+  bookController.uploadChapterImage.bind(bookController)
+);
 
 router.get("/my-books", bookController.getMyBooks.bind(bookController)); // ← your new endpoint
 router.get("/", bookController.getAllBooks.bind(bookController));
