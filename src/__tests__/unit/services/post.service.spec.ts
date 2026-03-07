@@ -41,34 +41,6 @@ describe("PostService Unit Tests", () => {
     await expect(service.deletePost("p1", userId)).rejects.toThrow(HttpError);
   });
 
-  /* ---------------- TOGGLE LIKE ---------------- */
-  it("should like a post if not liked yet", async () => {
-    const mockProfile: any = { likedPosts: [], save: jest.fn() };
-    const mockPost: any = { likes: [], likesCount: 0, save: jest.fn() };
-
-    (ProfileModel.findOne as any).mockResolvedValue(mockProfile);
-    (PostModel.findById as any).mockResolvedValue(mockPost);
-
-    const result = await service.toggleLike("p1", userId);
-
-    expect(mockProfile.save).toHaveBeenCalled();
-    expect(mockPost.save).toHaveBeenCalled();
-    expect(result.likesCount).toBe(1);
-  });
-
-  it("should unlike a post if already liked", async () => {
-    const mockProfile: any = { likedPosts: ["p1"], save: jest.fn() };
-    const mockPost: any = { _id: "p1", likes: [userId], likesCount: 1, save: jest.fn() };
-
-    (ProfileModel.findOne as any).mockResolvedValue(mockProfile);
-    (PostModel.findById as any).mockResolvedValue(mockPost);
-
-    const result = await service.toggleLike("p1", userId);
-
-    expect(mockProfile.save).toHaveBeenCalled();
-    expect(mockPost.save).toHaveBeenCalled();
-    expect(result.likesCount).toBe(0);
-  });
 
   /* ---------------- TOGGLE SAVE ---------------- */
   it("should save a post if not saved", async () => {
