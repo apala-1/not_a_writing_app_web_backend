@@ -161,6 +161,7 @@ const updated = await postService.updatePost(
             const limit = parseInt(req.query.limit as string) || 10;
             const userId = req.user!._id.toString();
 const posts = await postService.getAllPosts(userId, skip, limit);
+console.log("Posts fetched for feed:", posts);
             return res.status(200).json({ success: true, data: posts });
         } catch(err: any) {
             return res.status(500).json({ success: false, message: err.message });
@@ -200,8 +201,9 @@ const posts = await postService.getAllPosts(userId, skip, limit);
         try {
             const post = await postService.getPostById(req.params.id);
             if(!post) return res.status(404).json({ success: false, message: "Post not found" });
-            if (post.author.toString() != req.user!._id.toString())
-                return res.status(403).json({ success: false, message: "Unauthorized" });
+            if (!post.author.equals(req.user!._id)) {
+    return res.status(403).json({ success: false, message: "Unauthorized" });
+}
 
             // deleting files from uploads
             if(post.attachments) {

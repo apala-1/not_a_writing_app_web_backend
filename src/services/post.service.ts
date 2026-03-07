@@ -63,6 +63,7 @@ export class PostService {
         const post = await postRepo.getPostById(postId);
         if (!post) throw new HttpError("Post not found", 404);
         await postRepo.incrementViews(postId);
+        await post.populate("author", "name profilePicture");
         return post;
     }
 
@@ -160,10 +161,13 @@ async getLikedPosts(userId: string) {
         post.likesCount += 1;
     }
 
-    await profile.save();
-    await post.save();
+   await profile.save();
+await post.save();
 
-    return post;
+// populate before returning
+await post.populate("author", "name profilePicture");
+
+return post;
 }
 
 async toggleSave(postId: string, userId: string) {

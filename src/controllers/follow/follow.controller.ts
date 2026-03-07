@@ -28,6 +28,7 @@ export class FollowController {
     async searchUsers(req: Request, res: Response) {
   try {
     const q = req.query.q as string;
+    console.log("SEARCH QUERY:", q);
 
     const users = await followService.searchUsers(q);
 

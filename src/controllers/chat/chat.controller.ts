@@ -6,6 +6,8 @@ export class ChatController {
   try {
     const senderId = req.user?._id;
     const { receiverId, message } = req.body;
+    console.log("Received message:", { senderId, receiverId, message, file: req.file });
+    console.log("Token userId:", req.user?._id);
     const file = req.file;
 
     if (!senderId) return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -94,15 +96,18 @@ async getUnreadCounts(req: Request, res: Response) {
   async getConversation(req: Request, res: Response) {
     try {
       const { userA, userB } = req.params;
+      console.log(`Fetching conversation between ${userA} and ${userB}`);
       const messages = await ChatModel.find({
         $or: [
           { senderId: userA, receiverId: userB },
           { senderId: userB, receiverId: userA },
         ],
       }).sort({ createdAt: 1 });
+      console.log("Fetched messages:", messages);
 
       res.status(200).json({ success: true, data: messages });
     } catch (err) {
+      console.error("Error fetching conversation:", err);
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
