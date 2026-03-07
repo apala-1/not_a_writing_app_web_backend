@@ -1,168 +1,92 @@
 import { Request, Response } from "express";
 import { CommentService } from "../../services/comment.service";
-import { createCommentDTO } from "../../dtos/comment.dto";
-import { ProfileModel } from "../../model/profile.model";
-import { PopulatedProfileType } from "../../types/profile.type";
 import { Comment } from "../../model/comment.model";
-import { IComment } from "../../types/comment.type";
-import { IUser } from "../../model/user.model";
-
-const service = new CommentService();
 
 export class CommentController {
+  private service = new CommentService();
+
   async create(req: Request, res: Response) {
     try {
-      const parsed = createCommentDTO.parse(req.body);
+      const userId = req.user!._id.toString();
+      const { postId, content } = req.body;
 
-      const userId = (req as any).user.id;
+      const comment = await this.service.createComment(userId, postId, content);
 
-      const comment = await service.createComment(
-        userId,
-        parsed.postId,
-        parsed.content
+      const populated = await Comment.findById(comment._id).populate(
+        "user",
+        "_id name email profilePicture"
       );
 
-      res.status(201).json({
-        success: true,
-        data: comment,
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return res.status(201).json({ success: true, data: populated });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
     }
   }
 
   async getByPost(req: Request, res: Response) {
     try {
       const { postId } = req.params;
+      const comments = await this.service.getCommentsByPost(postId);
+      return res.json({ success: true, data: comments });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  }
 
-      const comments = await service.getCommentsByPost(postId);
+  async reply(req: Request, res: Response) {
+    try {
+      const userId = req.user!._id.toString();
+      const { postId, parentCommentId, content } = req.body;
 
-      res.json({
-        success: true,
-        data: comments,
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      const reply = await this.service.replyToComment(
+        userId,
+        postId,
+        content,
+        parentCommentId
+      );
+
+      const populated = await Comment.findById(reply._id).populate(
+        "user",
+        "_id name email profilePicture"
+      );
+
+      return res.status(201).json({ success: true, data: populated });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
     }
   }
 
   async update(req: Request, res: Response) {
-  try {
-    const { commentId } = req.params;
-    const { content } = req.body;
-    const userId = (req as any).user.id;
+    try {
+      const userId = req.user!._id.toString();
+      const { commentId } = req.params;
+      const { content } = req.body;
 
-    const updated = await service.updateComment(commentId, userId, content);
+      const updated = await this.service.updateComment(commentId, userId, content);
+      if (!updated) return res.status(404).json({ success: false, message: "Not found" });
 
-    if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: "Comment not found or not authorized",
-      });
+      const populated = await Comment.findById(updated._id).populate(
+        "user",
+        "_id name email profilePicture"
+      );
+
+      return res.status(200).json({ success: true, data: populated });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
     }
-
-    res.json({
-      success: true,
-      data: updated,
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
   }
-}
-
 
   async delete(req: Request, res: Response) {
     try {
+      const userId = req.user!._id.toString();
       const { commentId } = req.params;
-      const userId = (req as any).user.id;
 
-      const deleted = await service.deleteComment(commentId, userId);
+      const deleted = await this.service.deleteComment(commentId, userId);
+      if (!deleted) return res.status(404).json({ success: false, message: "Not found" });
 
-      if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          message: "Comment not found or not authorized",
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "Comment deleted",
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return res.json({ success: true, message: "Deleted" });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
     }
   }
-
-   async getWholeCommentWithProfile(req: Request, res: Response) {
-  try {
-    const userId = req.params.userId;
-
-    // Find all comments by this user and populate the user reference
-    const comments = await Comment.find({ user: userId })
-      .populate("user") as IComment[]; // Type assertion
-
-    if (!comments || comments.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No comments found for this user",
-      });
-    }
-
-    const data = comments.map(comment => {
-  const user = comment.user as IUser; // safe cast after populate
-
-  return {
-    commentId: comment._id,
-    content: comment.content,
-    createdAt: comment.createdAt,
-    user: {
-      userId: user._id,
-      name: user.name,
-      email: user.email,
-      profilePicture: user.profilePicture,
-    }
-  };
-});
-
-    return res.json({
-      success: true,
-      data,
-    });
-
-  } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-}
-
-async reply(req: Request, res: Response) {
-  try {
-    const userId = (req as any).user.id;
-    const { postId, parentCommentId, content } = req.body;
-
-    const reply = await service.replyToComment(userId, postId, content, parentCommentId);
-
-    res.status(201).json({
-      success: true,
-      data: reply,
-    });
-  } catch (err: any) {
-    res.status(400).json({ success: false, message: err.message });
-  }
-}
 }

@@ -6,10 +6,6 @@ const router = Router();
 const controller = new CommentController();
 
 router.post("/reply", authorizedMiddleware, controller.reply.bind(controller));
-router.get(
-  "/whole-comment/:userId",
-  controller.getWholeCommentWithProfile.bind(controller)
-);
 router.post("/", authorizedMiddleware, controller.create.bind(controller));
 router.get("/post/:postId", controller.getByPost.bind(controller));
 router.patch("/:commentId", authorizedMiddleware, controller.update.bind(controller));
