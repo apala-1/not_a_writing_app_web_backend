@@ -3,74 +3,77 @@ import { UserModel } from "../model/user.model";
 import { ProfileModel } from "../model/profile.model";
 import { PostModel } from "../model/post.model";
 import { Comment } from "../model/comment.model";
+import { FollowModel } from "../model/follow.model";
+import { BookModel } from "../model/book.model";
+import { ChatModel } from "../model/chat.model";
 
 export class AccountService {
   async deleteAccount(userId: string) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    try {
-      const userObjectId = new mongoose.Types.ObjectId(userId);
+    // ---------------- Books ----------------
+    // 1) Delete all books authored by the user
+    await BookModel.deleteMany({ author: userObjectId });
 
-      // 1) Find all posts authored by the user (we need the ids for cleanup)
-      const posts = await PostModel.find({ author: userObjectId }, { _id: 1 })
-        .session(session)
-        .lean();
+    // Also remove user from sharedWith arrays (in case other people's books were shared with them)
+    await BookModel.updateMany(
+      { sharedWith: userObjectId },
+      { $pull: { sharedWith: userObjectId } }
+    );
 
-      const postIds = posts.map((p) => p._id);
+    // ---------------- Chats (your ChatModel == messages) ----------------
+    // 2) Delete all chat messages where user is sender or receiver
+    await ChatModel.deleteMany({
+      $or: [{ senderId: userObjectId }, { receiverId: userObjectId }],
+    });
 
-      // 2) Delete ALL comments on the user's posts (includes other users comments)
-      if (postIds.length > 0) {
-        await Comment.deleteMany({ post: { $in: postIds } }).session(session);
-      }
+    // ---------------- Follow relationships ----------------
+    // 3) Delete follow docs involving this user
+    await FollowModel.deleteMany({
+      $or: [{ followerId: userObjectId }, { followedId: userObjectId }],
+    });
 
-      // 3) Delete user's comments anywhere (includes replies on other people's posts)
-      await Comment.deleteMany({ user: userObjectId }).session(session);
+    // ---------------- Posts + Comments ----------------
+    // 4) Find posts authored by user (need ids)
+    const posts = await PostModel.find({ author: userObjectId }, { _id: 1 }).lean();
+    const postIds = posts.map((p) => p._id);
 
-      // 4) Delete the user's posts
-      await PostModel.deleteMany({ author: userObjectId }).session(session);
+    // 5) Delete comments on the user's posts (everyone's)
+    if (postIds.length > 0) {
+      await Comment.deleteMany({ post: { $in: postIds } });
+    }
 
-      // 5) Remove user id from likes/savedBy on remaining posts
-      await PostModel.updateMany(
-        {},
-        { $pull: { likes: userObjectId, savedBy: userObjectId } },
-        { session }
-      );
+    // 6) Delete user's comments anywhere (including replies on other people's posts)
+    await Comment.deleteMany({ user: userObjectId });
 
-      // 6) Remove user from followers/following arrays
+    // 7) Delete user's posts
+    await PostModel.deleteMany({ author: userObjectId });
+
+    // 8) Remove user id from likes/savedBy arrays on remaining posts
+    await PostModel.updateMany({}, { $pull: { likes: userObjectId, savedBy: userObjectId } });
+
+    // ---------------- Profile cleanup ----------------
+    // 9) Remove user from followers/following arrays in all profiles
+    await ProfileModel.updateMany({}, { $pull: { followers: userObjectId, following: userObjectId } });
+
+    // 10) Remove deleted posts from liked/shared/saved arrays
+    if (postIds.length > 0) {
       await ProfileModel.updateMany(
         {},
-        { $pull: { followers: userObjectId, following: userObjectId } },
-        { session }
-      );
-
-      // 7) Remove the user's postIds from other users' profile arrays (liked/shared/saved)
-      if (postIds.length > 0) {
-        await ProfileModel.updateMany(
-          {},
-          {
-            $pull: {
-              likedPosts: { $in: postIds },
-              sharedPosts: { $in: postIds },
-              savedPosts: { $in: postIds },
-            },
+        {
+          $pull: {
+            likedPosts: { $in: postIds },
+            sharedPosts: { $in: postIds },
+            savedPosts: { $in: postIds },
           },
-          { session }
-        );
-      }
-
-      // 8) Delete the user's profile
-      await ProfileModel.deleteOne({ user: userObjectId }).session(session);
-
-      // 9) Finally, delete the user
-      await UserModel.deleteOne({ _id: userObjectId }).session(session);
-
-      await session.commitTransaction();
-    } catch (e) {
-      await session.abortTransaction();
-      throw e;
-    } finally {
-      session.endSession();
+        }
+      );
     }
+
+    // 11) Delete user's profile
+    await ProfileModel.deleteOne({ user: userObjectId });
+
+    // ---------------- Finally: delete user ----------------
+    await UserModel.deleteOne({ _id: userObjectId });
   }
 }
