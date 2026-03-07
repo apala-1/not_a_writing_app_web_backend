@@ -161,6 +161,7 @@ async getFollowing(req: Request, res: Response) {
         email: profile.user.email,
         profilePicture: profile.user.profilePicture,
         bio: profile.user.bio,
+        occupation: profile.user.occupation,
         postsCount: profile.postsCount,
         followersCount: profile.followers.length,
         followingCount: profile.following.length,
